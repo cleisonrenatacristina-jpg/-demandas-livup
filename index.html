@@ -38,9 +38,10 @@
 
   /* ── TOPBAR ── */
   #topbar {
-    display: flex; align-items: center; gap: 12px;
-    padding: 0 20px; height: 56px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 16px; height: 56px; flex-shrink: 0;
     background: var(--surface); border-bottom: 1px solid var(--border);
+    overflow-x: auto;
   }
   #logo { font-size: 17px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; white-space: nowrap; }
   #logo span { color: var(--accent2); }
@@ -137,7 +138,7 @@
   /* ── FILA VIEW ── */
   #fila-wrap { flex: 1; overflow-y: auto; padding: 16px 20px; }
   .fila-head {
-    display: grid; grid-template-columns: 2fr 100px 110px 140px 100px 1fr;
+    display: grid; grid-template-columns: 2fr 90px 110px 140px 110px 110px 90px;
     gap: 0; padding: 8px 14px;
     background: var(--card); border: 1px solid var(--border);
     border-radius: 8px 8px 0 0;
@@ -145,7 +146,7 @@
     letter-spacing: .8px; text-transform: uppercase;
   }
   .fila-row {
-    display: grid; grid-template-columns: 2fr 100px 110px 140px 100px 1fr;
+    display: grid; grid-template-columns: 2fr 90px 110px 140px 110px 110px 90px;
     gap: 0; padding: 10px 14px; align-items: center;
     border: 1px solid var(--border); border-top: none;
     cursor: pointer; transition: background .1s;
@@ -197,11 +198,11 @@
   }
   .btn:hover { filter: brightness(1.12); }
   .btn:active { transform: scale(.97); }
-  .btn-primary   { background: var(--accent); color: #fff; padding: 7px 16px; font-size: 12px; }
-  .btn-amber     { background: var(--accent2); color: #0b0f1a; padding: 7px 16px; font-size: 12px; }
-  .btn-secondary { background: var(--card); color: var(--muted); border: 1px solid var(--border2); padding: 7px 14px; font-size: 12px; }
-  .btn-danger    { background: #1f0a0a; color: var(--red); border: 1px solid #3d1010; padding: 7px 14px; font-size: 12px; }
-  .btn-ghost     { background: transparent; color: var(--muted); border: 1px solid var(--border2); padding: 7px 14px; font-size: 12px; }
+  .btn-primary   { background: var(--accent); color: #fff; padding: 6px 14px; font-size: 12px; }
+  .btn-amber     { background: var(--accent2); color: #0b0f1a; padding: 6px 14px; font-size: 12px; }
+  .btn-secondary { background: var(--card); color: var(--muted); border: 1px solid var(--border2); padding: 6px 12px; font-size: 12px; }
+  .btn-danger    { background: #1f0a0a; color: var(--red); border: 1px solid #3d1010; padding: 6px 12px; font-size: 12px; }
+  .btn-ghost     { background: transparent; color: var(--muted); border: 1px solid var(--border2); padding: 6px 12px; font-size: 12px; }
   .btn-sm        { padding: 4px 10px !important; font-size: 11px !important; }
 
   /* ── AI RESUMO ── */
@@ -217,7 +218,30 @@
   .ai-spinner    { width:14px;height:14px;border:2px solid #1e3a5f;border-top-color:#38bdf8;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0; }
   @keyframes spin { to { transform:rotate(360deg); } }
 
-  /* ── PRINT ── */
+  /* ── ANEXOS ── */
+  .anexo-area {
+    border: 2px dashed var(--border2); border-radius: 10px;
+    padding: 14px; text-align: center; cursor: pointer;
+    transition: all .15s; color: var(--muted); font-size: 12px;
+  }
+  .anexo-area:hover { border-color: var(--accent); color: var(--accent); }
+  .anexo-area.dragover { border-color: var(--accent); background: rgba(59,130,246,.08); }
+  .anexo-lista { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .anexo-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px;
+  }
+  .anexo-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; cursor: pointer; }
+  .anexo-icon  { width: 36px; height: 36px; border-radius: 6px; background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .anexo-nome  { flex: 1; font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .anexo-size  { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+  .anexo-del   { cursor: pointer; color: var(--red); font-size: 14px; flex-shrink: 0; opacity: .6; }
+  .anexo-del:hover { opacity: 1; }
+
+  /* ── LIGHTBOX ── */
+  #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none; align-items: center; justify-content: center; z-index: 500; cursor: zoom-out; }
+  #lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
   @media print {
     #app { display:none !important; }
     #print-area { display:block !important; }
@@ -339,14 +363,16 @@
     <div id="nav">
       <button class="nav-tab active"      onclick="setView('kanban')"   id="tab-kanban">🗂 Kanban</button>
       <button class="nav-tab"             onclick="setView('fila')"     id="tab-fila">📑 Fila</button>
-      <button class="nav-tab"             onclick="setView('reunioes')" id="tab-reunioes">📝 Reuniões</button>
       <button class="nav-tab"             onclick="setView('setores')"  id="tab-setores">🏢 Setores</button>
     </div>
     <div class="flex1"></div>
-    <button class="btn btn-ghost" onclick="exportExcel()" title="Exportar todas as demandas para Excel">📊 Excel</button>
-    <button class="btn btn-ghost" onclick="openApiKeyModal()" id="btn-apikey" title="Configurar chave da API">⚙️ API Key</button>
-    <button class="btn btn-amber" onclick="openAtaModal('new')">+ Nova Reunião</button>
-    <button class="btn btn-primary" onclick="openDemandaModal('new')">+ Demanda Avulsa</button>
+    <button class="btn btn-ghost" onclick="exportBackup()" title="Exportar backup completo">💾 Backup</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()" title="Importar backup">📂 Importar</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importBackup(event)"/>
+    <button class="btn btn-ghost" onclick="openApiKeyModal()" id="btn-apikey" title="Configurar chave da API">🔑 API</button>
+    <button class="btn btn-ghost" onclick="setView('reunioes')" id="btn-reunioes">📝 Reuniões</button>
+    <button class="btn btn-amber" onclick="openAtaModal('new')">+ Reunião</button>
+    <button class="btn btn-primary" onclick="openDemandaModal('new')">+ Demanda</button>
   </div>
 
   <!-- STATS BAR -->
@@ -381,7 +407,7 @@
     <div class="view" id="view-fila">
       <div id="fila-wrap">
         <div class="fila-head">
-          <span>Demanda</span><span>Setor</span><span>Prioridade</span><span>Status</span><span>Entrega</span><span>Origem</span>
+          <span>Demanda</span><span>Setor</span><span>Prioridade</span><span>Status</span><span>Entrega</span><span>Origem</span><span>Anexos</span>
         </div>
         <div id="fila-body"></div>
       </div>
@@ -412,7 +438,7 @@
 
 <!-- MODAL API KEY -->
 <div class="overlay" id="modal-apikey" style="display:none" onclick="if(event.target===this)closeModal('modal-apikey')">
-  <div class="modal" style="max-width:480px;">
+  <div class="modal" style="max-width:460px;">
     <div class="modal-hd">
       <div class="modal-hd-title">⚙️ Chave da API Anthropic</div>
       <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-apikey')">✕</button>
@@ -420,25 +446,28 @@
     <div class="modal-body">
       <div style="background:#0d1f3a;border:1px solid #1e3a5f;border-radius:10px;padding:14px;font-size:12px;color:#94a3b8;line-height:1.7;">
         <strong style="color:#38bdf8">Como obter sua chave:</strong><br>
-        1. Acesse <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#e8275a">console.anthropic.com</a><br>
-        2. Clique em <strong>Create Key</strong><br>
-        3. Copie e cole abaixo<br><br>
-        <span style="color:#f59e0b">🔒 A chave é salva apenas no seu navegador (localStorage) e nunca é enviada para nenhum servidor externo além da Anthropic.</span>
+        1. Acesse <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#e8275a">console.anthropic.com/settings/keys</a><br>
+        2. Clique em <strong>Create Key</strong> e copie<br>
+        3. Cole abaixo e salve<br><br>
+        <span style="color:#f59e0b">🔒 Salva só no seu navegador — nunca enviada a nenhum outro servidor.</span>
       </div>
       <div class="field">
         <label>Sua API Key</label>
         <input type="password" id="apikey-input" placeholder="sk-ant-api03-..." autocomplete="off"/>
       </div>
-      <div id="apikey-status" style="font-size:12px;display:none"></div>
+      <div id="apikey-status" style="font-size:12px;min-height:18px"></div>
     </div>
     <div class="modal-ft">
-      <button class="btn btn-danger btn-sm" onclick="clearApiKey()" id="apikey-clear" style="display:none">🗑 Remover chave</button>
+      <button class="btn btn-danger btn-sm" id="apikey-clear" style="display:none" onclick="clearApiKey()">🗑 Remover</button>
       <div class="flex1"></div>
       <button class="btn btn-secondary" onclick="closeModal('modal-apikey')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveApiKey()">💾 Salvar Chave</button>
     </div>
   </div>
 </div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()"><img id="lightbox-img" src=""/></div>
 
 <!-- PRINT AREA -->
 <div id="print-area"></div>
@@ -453,7 +482,8 @@
       <div class="field"><label>Título *</label><input id="md-titulo" placeholder="O que precisa ser feito..."/></div>
       <div class="field"><label>Descrição / Observações</label><textarea id="md-descricao" rows="3" placeholder="Detalhes, contexto da reunião..."></textarea></div>
       <div class="grid2">
-        <div class="field"><label>Setor</label><select id="md-setor"></select></div>
+        <div class="field"><label>Setor</label><select id="md-setor" onchange="onSetorChange()"></select></div>
+        <div class="field"><label>Equipamento</label><select id="md-equipamento"><option value="">Selecione o setor primeiro</option></select></div>
         <div class="field"><label>Prioridade</label>
           <select id="md-prioridade">
             <option value="critica">🔴 Crítica</option>
@@ -471,6 +501,39 @@
         <div class="sec-label" style="color:var(--accent2)">Mover Status Rapidamente</div>
         <div class="status-btns" id="md-mover-btns"></div>
       </div>
+
+      <!-- REGISTRO DE PARADA -->
+      <div style="background:var(--bg);border:1px solid #3d1a00;border-radius:10px;padding:14px;" id="md-parada-wrap">
+        <div style="display:flex;align-items:center;margin-bottom:10px;">
+          <span style="font-size:16px;margin-right:6px">⏱️</span>
+          <div class="sec-label" style="color:#f97316;flex:1;border:none;margin:0;padding:0">Registro de Parada do Equipamento</div>
+          <button class="btn btn-sm" onclick="addParada()" style="background:#3d1a00;color:#f97316;border:1px solid #f9731640;font-family:inherit;cursor:pointer;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;">+ Adicionar Parada</button>
+        </div>
+        <div id="md-paradas-lista"></div>
+        <div id="md-parada-vazio" style="font-size:12px;color:var(--muted);text-align:center;padding:10px 0;">
+          Nenhuma parada registrada.
+        </div>
+        <!-- RESUMO -->
+        <div id="md-parada-resumo" style="display:none;margin-top:12px;background:#1a0d00;border:1px solid #f9731640;border-radius:8px;padding:12px;">
+          <div style="font-size:11px;font-weight:700;color:#f97316;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">📊 Impacto da Parada</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;" id="md-parada-stats"></div>
+        </div>
+      </div>
+
+      <!-- ANEXOS -->
+      <div style="background:var(--bg);border:1px solid #1e3a5f;border-radius:10px;padding:14px;">
+        <div class="sec-label" style="color:var(--sky);margin-bottom:10px" id="md-anexos-titulo">📎 Anexos</div>
+        <div class="anexo-area" id="md-drop-area"
+          onclick="document.getElementById('md-file-input').click()"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="handleDrop(event)">
+          📁 Clique ou arraste imagens e arquivos aqui<br>
+          <span style="font-size:10px;opacity:.6">PNG, JPG, PDF, XLSX — máx. 5MB por arquivo</span>
+        </div>
+        <input type="file" id="md-file-input" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" style="display:none" onchange="handleFileSelect(event)"/>
+        <div class="anexo-lista" id="md-anexos-lista"></div>
+      </div>
     </div>
     <div class="modal-ft">
       <button class="btn btn-danger" id="md-del-btn" style="display:none" onclick="deleteDemanda()">Excluir</button>
@@ -483,17 +546,42 @@
 
 <!-- MODAL SETOR -->
 <div class="overlay" id="modal-setor" style="display:none" onclick="if(event.target===this)closeModal('modal-setor')">
-  <div class="modal" style="max-width:400px;">
+  <div class="modal" style="max-width:500px;">
     <div class="modal-hd">
       <div class="modal-hd-title" id="ms-title">Setor</div>
       <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-setor')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field"><label>Nome *</label><input id="ms-nome" placeholder="Ex: TI, RH, Comercial..."/></div>
+      <div class="field"><label>Nome *</label><input id="ms-nome" placeholder="Ex: Cozinha, Manutenção, TI..."/></div>
       <div class="field"><label>Descrição</label><input id="ms-desc" placeholder="Responsabilidades do setor..."/></div>
       <div class="field">
         <label>Cor</label>
         <div class="color-dots" id="ms-cores"></div>
+      </div>
+
+      <!-- EQUIPAMENTOS -->
+      <div style="background:var(--bg);border:1px solid #1e3a5f;border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;margin-bottom:10px;">
+          <div class="sec-label" style="color:var(--sky);flex:1;border:none;margin:0;padding:0">🔧 Equipamentos do Setor</div>
+          <button class="btn btn-primary btn-sm" onclick="addEquipamento()">+ Adicionar</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input id="ms-equip-input" placeholder="Nome do equipamento..." style="
+            flex:1;background:var(--card);border:1px solid var(--border2);
+            border-radius:8px;padding:7px 12px;color:var(--text);
+            font-family:inherit;font-size:13px;outline:none;
+          " onkeydown="if(event.key==='Enter')document.getElementById('ms-equip-kgh').focus()"/>
+          <input id="ms-equip-kgh" type="number" min="0" step="0.1" placeholder="kg/h" style="
+            width:80px;background:var(--card);border:1px solid var(--border2);
+            border-radius:8px;padding:7px 10px;color:var(--text);
+            font-family:inherit;font-size:13px;outline:none;text-align:center;
+          " onkeydown="if(event.key==='Enter')addEquipamento()"/>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">📌 Informe o nome e a capacidade em kg por hora do equipamento</div>
+        <div id="ms-equip-lista" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
+        <div id="ms-equip-vazio" style="font-size:12px;color:var(--muted);text-align:center;padding:12px 0;">
+          Nenhum equipamento cadastrado ainda.
+        </div>
       </div>
     </div>
     <div class="modal-ft">
@@ -602,6 +690,9 @@ let editingAtaId     = null;
 let detailAtaId      = null;
 let ataTaskList      = [];
 let selectedColor    = CORES[0];
+let currentAnexos    = [];
+let currentEquipamentos = [];
+let currentParadas   = [];
 
 function save() { localStorage.setItem("df3", JSON.stringify(DB)); }
 function uid()  { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -654,8 +745,17 @@ function setView(v) {
   document.getElementById("view-"+v).classList.add("active");
   document.querySelectorAll(".nav-tab").forEach(el=>el.classList.remove("active"));
   const tab = document.getElementById("tab-"+v);
-  tab.classList.add("active");
-  if (v==="reunioes") tab.classList.add("amber");
+  if(tab) {
+    tab.classList.add("active");
+    if (v==="reunioes") tab.classList.add("amber");
+  }
+  // highlight botão reuniões
+  const btnR = document.getElementById("btn-reunioes");
+  if(btnR) {
+    btnR.style.background    = v==="reunioes" ? "var(--accent2)" : "";
+    btnR.style.color         = v==="reunioes" ? "#0b0f1a" : "";
+    btnR.style.borderColor   = v==="reunioes" ? "var(--accent2)" : "";
+  }
   render();
 }
 
@@ -722,7 +822,10 @@ function demandaCardHtml(d) {
     ${d.descricao?`<div class="d-card-desc">${escHtml(d.descricao)}</div>`:""}
     <div class="d-card-foot">
       ${setor?tagHtml(setor.cor,setor.nome):""}
+      ${d.equipamento?`<span style="font-size:10px;color:var(--muted)">🔧 ${escHtml(d.equipamento)}</span>`:""}
+      ${d.paradas?.filter(p=>p.inicio&&p.fim).length?`<span style="font-size:10px;color:#f97316">⏱ ${d.paradas.filter(p=>p.inicio&&p.fim).length} parada${d.paradas.filter(p=>p.inicio&&p.fim).length>1?"s":""}</span>`:""}
       ${d.responsavel?`<span style="font-size:10px;color:var(--muted)">👤 ${escHtml(d.responsavel)}</span>`:""}
+      ${d.anexos?.length?`<span style="font-size:10px;color:var(--sky)">📎 ${d.anexos.length}</span>`:""}
       ${d.dataEntrega?prazoHtml(d.dataEntrega):""}
     </div>
   </div>`;
@@ -746,6 +849,15 @@ function renderFila() {
     const dias=diasRest(d.dataEntrega);
     const cls=dias===null?"":dias<0?"prazo-late":dias<=3?"prazo-warn":"prazo-ok";
     const lbl=dias===null?"—":dias<0?`${fmtDate(d.dataEntrega)} (${Math.abs(dias)}d atrasado)`:dias===0?`${fmtDate(d.dataEntrega)} (hoje)`:`${fmtDate(d.dataEntrega)} (${dias}d)`;
+    const imgs = (d.anexos||[]).filter(a=>a.tipo.startsWith("image/"));
+    const outros = (d.anexos||[]).filter(a=>!a.tipo.startsWith("image/"));
+    const anexosHtml = d.anexos?.length
+      ? `<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+          ${imgs.slice(0,3).map(a=>`<img src="${a.data}" style="width:28px;height:28px;border-radius:4px;object-fit:cover;border:1px solid var(--border);cursor:pointer" onclick="event.stopPropagation();openLightboxDirect('${a.data.replace(/'/g,"\\'")}','${escHtml(a.nome)}')" title="${escHtml(a.nome)}"/>`).join("")}
+          ${outros.length?`<span style="font-size:10px;color:var(--sky)">📎${outros.length}</span>`:""}
+          ${imgs.length>3?`<span style="font-size:10px;color:var(--muted)">+${imgs.length-3}</span>`:""}
+         </div>`
+      : `<span style="color:var(--border2);font-size:11px">—</span>`;
     return `<div class="fila-row" onclick="openDemandaModal('${d.id}')" style="background:${i%2===0?"var(--card)":"var(--surface)"}">
       <div><div class="fila-row-title">${escHtml(d.titulo)}</div>${d.responsavel?`<div class="fila-row-sub">👤 ${escHtml(d.responsavel)}</div>`:""}</div>
       <div>${setor?tagHtml(setor.cor,setor.nome):""}</div>
@@ -753,6 +865,7 @@ function renderFila() {
       <div>${tagHtml(sc.color,sc.icon+" "+sc.label)}</div>
       <div class="${cls}" style="font-size:11px">${d.dataEntrega?lbl:"—"}</div>
       <div style="font-size:11px;color:var(--muted)">${escHtml(d.origem||"—")}</div>
+      <div>${anexosHtml}</div>
     </div>`;
   }).join("");
 }
@@ -798,9 +911,10 @@ function renderSetores() {
         <span style="font-weight:800;font-size:14px">${escHtml(s.nome)}</span>
       </div>
       ${s.descricao?`<div style="font-size:11px;color:var(--muted);margin-bottom:10px">${escHtml(s.descricao)}</div>`:""}
-      <div style="display:flex;gap:14px">
-        <div style="font-size:11px;color:var(--muted)"><span style="font-family:var(--mono);font-size:18px;color:${s.cor}">${total}</span> total</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div style="font-size:11px;color:var(--muted)"><span style="font-family:var(--mono);font-size:18px;color:${s.cor}">${total}</span> demandas</div>
         <div style="font-size:11px;color:var(--muted)"><span style="font-family:var(--mono);font-size:18px;color:var(--accent2)">${open}</span> em aberto</div>
+        <div style="font-size:11px;color:var(--muted)"><span style="font-family:var(--mono);font-size:18px;color:var(--sky)">${s.equipamentos?.length||0}</span> equipamentos</div>
       </div>
     </div>`;
   }).join("");
@@ -827,11 +941,30 @@ function openDemandaModal(idOrNew) {
   document.getElementById("md-titulo").value     = d?.titulo||"";
   document.getElementById("md-descricao").value  = d?.descricao||"";
   document.getElementById("md-setor").value      = d?.setorId||"";
+  onSetorChange(d?.equipamento||"");
   document.getElementById("md-prioridade").value = d?.prioridade||"media";
   document.getElementById("md-status").value     = d?.status||"aguardando";
   document.getElementById("md-data").value       = d?.dataEntrega||"";
   document.getElementById("md-resp").value       = d?.responsavel||"";
   document.getElementById("md-origem").value     = d?.origem||"";
+
+  // carrega anexos da demanda
+  currentAnexos = (d?.anexos && Array.isArray(d.anexos)) ? JSON.parse(JSON.stringify(d.anexos)) : [];
+
+  // carrega paradas
+  currentParadas = (d?.paradas && Array.isArray(d.paradas)) ? JSON.parse(JSON.stringify(d.paradas)) : [];
+  renderParadas();
+
+  // render anexos
+  renderAnexosModal();
+  document.getElementById("modal-demanda").style.display="flex";
+  // se tiver anexos, rola até a seção
+  if(currentAnexos.length){
+    setTimeout(()=>{
+      const lista = document.getElementById("md-anexos-lista");
+      if(lista) lista.scrollIntoView({behavior:"smooth", block:"center"});
+    }, 200);
+  }
 
   const delBtn=document.getElementById("md-del-btn");
   delBtn.style.display = d?"inline-flex":"none";
@@ -848,8 +981,6 @@ function openDemandaModal(idOrNew) {
   } else {
     moverWrap.style.display="none";
   }
-
-  document.getElementById("modal-demanda").style.display="flex";
 }
 
 function quickMover(id,status){
@@ -864,11 +995,14 @@ function saveDemanda(){
     titulo,
     descricao: document.getElementById("md-descricao").value,
     setorId:   document.getElementById("md-setor").value,
+    equipamento: document.getElementById("md-equipamento").value,
     prioridade:document.getElementById("md-prioridade").value,
     status:    document.getElementById("md-status").value,
     dataEntrega:document.getElementById("md-data").value,
     responsavel:document.getElementById("md-resp").value,
     origem:    document.getElementById("md-origem").value,
+    anexos:    currentAnexos,
+    paradas:   currentParadas,
   };
   if(editingDemandaId){
     DB.demandas=DB.demandas.map(d=>d.id===editingDemandaId?{...d,...obj}:d);
@@ -919,10 +1053,72 @@ function hexToRgb(hex){
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+function openSetorModal(idOrNew){
+  editingSetorId = idOrNew==="new"?null:idOrNew;
+  const s = idOrNew==="new"?null:DB.setores.find(x=>x.id===idOrNew);
+  document.getElementById("ms-title").textContent = s?"Editar Setor":"Novo Setor";
+  document.getElementById("ms-nome").value = s?.nome||"";
+  document.getElementById("ms-desc").value = s?.descricao||"";
+  selectedColor = s?.cor||CORES[0];
+
+  const dots=document.getElementById("ms-cores");
+  dots.innerHTML=CORES.map(c=>`
+    <div class="color-dot ${c===selectedColor?"selected":""}"
+      style="background:${c}" onclick="selectColor('${c}')"></div>`).join("");
+
+  // carrega equipamentos
+  currentEquipamentos = s?.equipamentos ? JSON.parse(JSON.stringify(s.equipamentos)) : [];
+  document.getElementById("ms-equip-input").value = "";
+  document.getElementById("ms-equip-kgh").value = "";
+  renderEquipamentosModal();
+
+  document.getElementById("ms-del-btn").style.display = s?"inline-flex":"none";
+  document.getElementById("modal-setor").style.display="flex";
+}
+
+function addEquipamento(){
+  const inp  = document.getElementById("ms-equip-input");
+  const kghI = document.getElementById("ms-equip-kgh");
+  const nome = inp.value.trim();
+  if(!nome) return inp.focus();
+  const kgh  = parseFloat(kghI.value)||0;
+  if(currentEquipamentos.find(e=>e.nome===nome)){ alert("Equipamento já cadastrado!"); return; }
+  currentEquipamentos.push({ nome, kgh });
+  inp.value = ""; kghI.value = "";
+  renderEquipamentosModal();
+  inp.focus();
+}
+
+function removeEquipamento(nome){
+  currentEquipamentos = currentEquipamentos.filter(e=>e.nome!==nome);
+  renderEquipamentosModal();
+}
+
+function renderEquipamentosModal(){
+  const lista = document.getElementById("ms-equip-lista");
+  const vazio = document.getElementById("ms-equip-vazio");
+  if(!currentEquipamentos.length){
+    lista.innerHTML = "";
+    vazio.style.display = "block";
+    return;
+  }
+  vazio.style.display = "none";
+  lista.innerHTML = currentEquipamentos.map(e=>{
+    const nome = typeof e==="string"?e:e.nome;
+    const kgh  = typeof e==="string"?0:e.kgh||0;
+    return `<div style="display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;">
+      <span style="font-size:14px">🔧</span>
+      <span style="flex:1;font-size:13px;font-weight:600">${escHtml(nome)}</span>
+      ${kgh?`<span style="font-size:11px;color:var(--accent2);font-family:var(--mono);background:var(--bg);padding:2px 8px;border-radius:6px">${kgh} kg/h</span>`:`<span style="font-size:10px;color:var(--muted)">sem capacidade</span>`}
+      <button onclick="removeEquipamento('${escHtml(nome)}')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:11px;font-weight:700;padding:3px 8px;font-family:inherit;">✕</button>
+    </div>`;
+  }).join("");
+}
+
 function saveSetor(){
   const nome=document.getElementById("ms-nome").value.trim();
   if(!nome) return alert("Nome é obrigatório.");
-  const obj={nome,descricao:document.getElementById("ms-desc").value,cor:selectedColor};
+  const obj={nome,descricao:document.getElementById("ms-desc").value,cor:selectedColor,equipamentos:currentEquipamentos};
   if(editingSetorId){
     DB.setores=DB.setores.map(s=>s.id===editingSetorId?{...s,...obj}:s);
   } else {
@@ -934,8 +1130,135 @@ function saveSetor(){
 function deleteSetor(){
   if(!confirm("Excluir este setor? As demandas ficarão sem setor.")) return;
   DB.setores=DB.setores.filter(s=>s.id!==editingSetorId);
-  DB.demandas=DB.demandas.map(d=>d.setorId===editingSetorId?{...d,setorId:""}:d);
+  DB.demandas=DB.demandas.map(d=>d.setorId===editingSetorId?{...d,setorId:"",equipamento:""}:d);
   save(); closeModal("modal-setor"); render();
+}
+
+// filtra equipamentos ao mudar setor na demanda
+function onSetorChange(equipamentoSalvo){
+  const setorId = document.getElementById("md-setor").value;
+  const setor = DB.setores.find(s=>s.id===setorId);
+  const sel = document.getElementById("md-equipamento");
+  const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,kgh:0}:e);
+  if(!equips.length){
+    sel.innerHTML = `<option value="">Nenhum equipamento cadastrado</option>`;
+  } else {
+    sel.innerHTML = `<option value="">Selecione o equipamento...</option>`
+      + equips.map(e=>`<option value="${escHtml(e.nome)}" data-kgh="${e.kgh||0}" ${e.nome===equipamentoSalvo?"selected":""}>${escHtml(e.nome)}${e.kgh?` (${e.kgh} kg/h)`:""}</option>`).join("");
+  }
+  if(equipamentoSalvo) sel.value = equipamentoSalvo;
+  calcularParadas();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PARADAS
+// ════════════════════════════════════════════════════════════════════
+function addParada(){
+  const agora = new Date();
+  const iso = d => d.toISOString().slice(0,16);
+  currentParadas.push({ id:uid(), inicio: iso(agora), fim: "", obs:"" });
+  renderParadas();
+}
+
+function removeParada(id){
+  currentParadas = currentParadas.filter(p=>p.id!==id);
+  renderParadas();
+  calcularParadas();
+}
+
+function updateParada(id, campo, valor){
+  currentParadas = currentParadas.map(p=>p.id===id?{...p,[campo]:valor}:p);
+  calcularParadas();
+}
+
+function getKghEquipamento(){
+  const sel = document.getElementById("md-equipamento");
+  const opt = sel.options[sel.selectedIndex];
+  return parseFloat(opt?.dataset?.kgh||0)||0;
+}
+
+function calcularParadas(){
+  const resumo = document.getElementById("md-parada-resumo");
+  const stats  = document.getElementById("md-parada-stats");
+  const kgh    = getKghEquipamento();
+
+  const paradas = currentParadas.filter(p=>p.inicio&&p.fim);
+  if(!paradas.length || !resumo){ if(resumo) resumo.style.display="none"; return; }
+
+  let totalMin = 0;
+  paradas.forEach(p=>{
+    const ini = new Date(p.inicio);
+    const fim = new Date(p.fim);
+    if(fim>ini) totalMin += (fim-ini)/60000;
+  });
+
+  const totalH   = totalMin/60;
+  const totalKg  = kgh>0 ? (totalH*kgh) : null;
+  const hh = String(Math.floor(totalH)).padStart(2,"0");
+  const mm = String(Math.round(totalMin%60)).padStart(2,"0");
+
+  resumo.style.display = "block";
+  stats.innerHTML = `
+    <div style="background:var(--card);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-family:var(--mono);font-size:22px;color:#f97316;font-weight:700">${hh}h${mm}m</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">Tempo parado</div>
+    </div>
+    <div style="background:var(--card);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-family:var(--mono);font-size:22px;color:#ef4444;font-weight:700">${kgh>0?kgh+" kg/h":"—"}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">Capacidade</div>
+    </div>
+    <div style="background:var(--card);border-radius:8px;padding:10px;text-align:center;${totalKg!==null?"border:1px solid #ef444440":""}">
+      <div style="font-family:var(--mono);font-size:22px;color:${totalKg!==null?"#ef4444":"var(--muted)"};font-weight:700">
+        ${totalKg!==null?totalKg.toFixed(1)+" kg":"Configure kg/h"}
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">Kg deixou de produzir</div>
+    </div>`;
+}
+
+function renderParadas(){
+  const lista = document.getElementById("md-paradas-lista");
+  const vazio = document.getElementById("md-parada-vazio");
+  if(!currentParadas.length){
+    lista.innerHTML=""; vazio.style.display="block"; return;
+  }
+  vazio.style.display="none";
+  lista.innerHTML = currentParadas.map((p,i)=>`
+    <div style="background:var(--card);border:1px solid #3d1a00;border-radius:10px;padding:12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:12px;font-weight:700;color:#f97316;">PARADA ${i+1}</span>
+        <div style="flex:1"></div>
+        <button onclick="removeParada('${p.id}')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:11px;font-weight:700;padding:3px 8px;font-family:inherit;">✕ Remover</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+        <div class="field">
+          <label>Início da Parada</label>
+          <input type="datetime-local" value="${p.inicio}" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;"
+            onchange="updateParada('${p.id}','inicio',this.value)"/>
+        </div>
+        <div class="field">
+          <label>Fim da Parada</label>
+          <input type="datetime-local" value="${p.fim}" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;"
+            onchange="updateParada('${p.id}','fim',this.value)"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Observação</label>
+        <input value="${escHtml(p.obs||"")}" placeholder="Motivo da parada..." style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;"
+          oninput="updateParada('${p.id}','obs',this.value)"/>
+      </div>
+      ${p.inicio&&p.fim&&new Date(p.fim)>new Date(p.inicio)?`
+        <div style="margin-top:8px;font-size:11px;color:#f97316;font-family:var(--mono);">
+          ⏱ ${formatDuracao(new Date(p.inicio),new Date(p.fim))}
+          ${getKghEquipamento()>0?` — <span style="color:#ef4444">-${((new Date(p.fim)-new Date(p.inicio))/3600000*getKghEquipamento()).toFixed(1)} kg</span>`:""}
+        </div>`:""}
+    </div>`).join("");
+  calcularParadas();
+}
+
+function formatDuracao(ini, fim){
+  const min = Math.round((fim-ini)/60000);
+  const h = Math.floor(min/60), m = min%60;
+  return h>0?`${h}h ${m}min`:`${m} minutos`;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1135,30 +1458,27 @@ function deleteAtaConfirm(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// API KEY MANAGEMENT
+// API KEY
 // ════════════════════════════════════════════════════════════════════
 function getApiKey(){ return localStorage.getItem("df_apikey")||""; }
 
 function openApiKeyModal(){
   const key = getApiKey();
-  const inp = document.getElementById("apikey-input");
-  const clrBtn = document.getElementById("apikey-clear");
-  const status = document.getElementById("apikey-status");
-  inp.value = key ? "••••••••••••••••" : "";
-  inp.dataset.hasKey = key ? "1" : "0";
-  clrBtn.style.display = key ? "inline-flex" : "none";
-  status.style.display = key ? "block" : "none";
-  if(key) { status.innerHTML = `<span style="color:var(--green)">✅ Chave configurada (termina em ...${key.slice(-6)})</span>`; }
+  document.getElementById("apikey-input").value = key ? "sk-ant-••••••••••••••••"+key.slice(-6) : "";
+  document.getElementById("apikey-input").dataset.filled = key ? "1" : "0";
+  document.getElementById("apikey-clear").style.display = key ? "inline-flex" : "none";
+  document.getElementById("apikey-status").innerHTML = key
+    ? `<span style="color:var(--green)">✅ Chave configurada — termina em ...${key.slice(-6)}</span>`
+    : "";
   document.getElementById("modal-apikey").style.display = "flex";
 }
 
 function saveApiKey(){
   const inp = document.getElementById("apikey-input");
   const val = inp.value.trim();
-  if(!val || val.startsWith("•")) { closeModal("modal-apikey"); return; }
+  if(!val || inp.dataset.filled==="1" && val.includes("••••")) { closeModal("modal-apikey"); return; }
   if(!val.startsWith("sk-ant-")){
-    document.getElementById("apikey-status").style.display="block";
-    document.getElementById("apikey-status").innerHTML=`<span style="color:var(--red)">❌ Chave inválida. Deve começar com "sk-ant-"</span>`;
+    document.getElementById("apikey-status").innerHTML = `<span style="color:var(--red)">❌ Inválida. Deve começar com "sk-ant-"</span>`;
     return;
   }
   localStorage.setItem("df_apikey", val);
@@ -1175,37 +1495,34 @@ function clearApiKey(){
 
 function updateApiKeyBtn(){
   const btn = document.getElementById("btn-apikey");
+  if(!btn) return;
   const key = getApiKey();
-  if(key){
-    btn.style.color = "var(--green)";
-    btn.style.borderColor = "var(--green)";
-    btn.textContent = "✅ API Key";
-  } else {
-    btn.style.color = "";
-    btn.style.borderColor = "";
-    btn.textContent = "⚙️ API Key";
-  }
+  btn.textContent = key ? "✅ API Key" : "⚙️ API Key";
+  btn.style.color = key ? "var(--green)" : "";
+  btn.style.borderColor = key ? "var(--green)" : "";
 }
 
 // ════════════════════════════════════════════════════════════════════
-// IA — RESUMO DE ATA
+// IA — RESUMO DE ATA (usa API interna — sem chave necessária)
 // ════════════════════════════════════════════════════════════════════
 async function gerarResumoIA(ataId){
-  const apiKey = getApiKey();
-  if(!apiKey){
-    const resultDiv = document.getElementById(`ai-result-${ataId}`);
-    resultDiv.innerHTML = `<div style="font-size:12px;color:var(--accent2)">
-      ⚙️ Configure sua chave da API Anthropic para usar o resumo com IA.<br>
-      <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="openApiKeyModal()">Configurar API Key</button>
-    </div>`;
-    return;
-  }
   const r = DB.reunioes.find(x=>x.id===ataId);
   if(!r) return;
   const dd = DB.demandas.filter(d=>d.ataId===ataId);
 
   const resultDiv = document.getElementById(`ai-result-${ataId}`);
   const btn       = document.getElementById(`ai-btn-${ataId}`);
+
+  // Verifica chave
+  const apiKey = getApiKey();
+  if(!apiKey){
+    resultDiv.innerHTML = `<div style="font-size:12px;color:var(--accent2)">
+      ⚙️ Configure sua chave da API Anthropic para usar o resumo com IA.<br>
+      <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="openApiKeyModal()">Configurar API Key</button>
+    </div>`;
+    return;
+  }
+
   btn.disabled = true; btn.textContent = "Gerando...";
   resultDiv.innerHTML = `<div class="ai-loading"><div class="ai-spinner"></div>Analisando reunião com IA...</div>`;
 
@@ -1213,7 +1530,7 @@ async function gerarResumoIA(ataId){
     ? dd.map((t,i)=>`${i+1}. [${PRIO[t.prioridade].label}] ${t.titulo}${t.responsavel?" — Resp: "+t.responsavel:""}${t.dataEntrega?" — Prazo: "+fmtDate(t.dataEntrega):""}`).join("\n")
     : "Nenhuma tarefa registrada.";
 
-  const prompt = `Você é um assistente de gestão empresarial. Analise os dados desta reunião e gere um resumo executivo em português brasileiro, estruturado e objetivo.
+  const prompt = `Você é um assistente de gestão empresarial da LivUp. Analise os dados desta reunião e gere um resumo executivo em português brasileiro, estruturado e objetivo.
 
 REUNIÃO: ${r.titulo}
 DATA: ${fmtDate(r.data)}
@@ -1237,27 +1554,28 @@ Seja direto, profissional e use linguagem de negócios. Máximo 300 palavras.`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version":"2023-06-01",
-        "anthropic-dangerous-direct-browser-access":"true"
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
       },
       body: JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        messages:[{role:"user",content:prompt}]
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
       })
     });
+
     if (!res.ok) {
       const errData = await res.json().catch(()=>({}));
       throw new Error(`API ${res.status}: ${errData.error?.message||res.statusText}`);
     }
+
     const data = await res.json();
     const texto = data.content?.[0]?.text || "Não foi possível gerar o resumo.";
 
-    // formatar markdown básico
     const html = texto
       .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
       .replace(/^(\d+\.\s)/gm,"<br><strong>$1</strong>")
@@ -1270,14 +1588,98 @@ Seja direto, profissional e use linguagem de negócios. Máximo 300 palavras.`;
         <button class="btn btn-ghost btn-sm" onclick="gerarResumoIA('${ataId}')">🔄 Regenerar</button>
       </div>`;
 
-    // salvar no banco
     DB.reunioes = DB.reunioes.map(x=>x.id===ataId?{...x,aiResumo:texto}:x);
     save();
 
   } catch(e) {
-    resultDiv.innerHTML = `<div style="font-size:12px;color:var(--red)">Erro ao chamar a IA. Verifique sua conexão e tente novamente.<br><small>${e.message}</small></div>`;
+    resultDiv.innerHTML = `<div style="font-size:12px;color:var(--red)">Erro ao gerar resumo.<br><small>${e.message}</small></div>`;
   }
   btn.disabled=false; btn.textContent="Gerar Resumo";
+}
+
+// ════════════════════════════════════════════════════════════════════
+// BACKUP — EXPORTAR / IMPORTAR
+// ════════════════════════════════════════════════════════════════════
+function exportBackup(){
+  const payload = {
+    versao: "1.0",
+    exportadoEm: new Date().toISOString(),
+    app: "Demandas LivUp",
+    dados: DB
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], {type:"application/json;charset=utf-8;"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  const data = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `demandas-livup-backup-${data}.json`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+
+  // feedback visual
+  const btn = document.querySelector('[onclick="exportBackup()"]');
+  const orig = btn.textContent;
+  btn.textContent = "✅ Salvo!";
+  btn.style.color = "var(--green)";
+  btn.style.borderColor = "var(--green)";
+  setTimeout(()=>{ btn.textContent=orig; btn.style.color=""; btn.style.borderColor=""; }, 2000);
+}
+
+function importBackup(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const payload = JSON.parse(e.target.result);
+
+      // aceita tanto o formato com wrapper quanto o DB direto
+      const dados = payload.dados || payload;
+
+      if(!dados.demandas || !dados.setores){
+        alert("❌ Arquivo inválido! Certifique-se de usar um backup gerado pelo Demandas LivUp.");
+        return;
+      }
+
+      const totalDemandas = dados.demandas.length;
+      const totalReunioes = (dados.reunioes||[]).length;
+      const totalSetores  = dados.setores.length;
+
+      const confirma = confirm(
+        `📂 Backup encontrado:\n\n` +
+        `• ${totalSetores} setor(es)\n` +
+        `• ${totalDemandas} demanda(s)\n` +
+        `• ${totalReunioes} reunião(ões)\n\n` +
+        `Exportado em: ${payload.exportadoEm ? new Date(payload.exportadoEm).toLocaleString("pt-BR") : "Data desconhecida"}\n\n` +
+        `⚠️ Isso VAI SUBSTITUIR todos os dados atuais.\nDeseja continuar?`
+      );
+
+      if(!confirma) return;
+
+      DB = {
+        setores:  dados.setores  || [],
+        demandas: dados.demandas || [],
+        reunioes: dados.reunioes || [],
+      };
+      save();
+      render();
+
+      // feedback
+      const btn = document.querySelector('[onclick="document.getElementById(\'import-input\').click()"]');
+      const orig = btn.textContent;
+      btn.textContent = "✅ Importado!";
+      btn.style.color = "var(--green)";
+      btn.style.borderColor = "var(--green)";
+      setTimeout(()=>{ btn.textContent=orig; btn.style.color=""; btn.style.borderColor=""; }, 2500);
+
+    } catch(err) {
+      alert("❌ Erro ao ler o arquivo. Certifique-se de que é um JSON válido.\n\n" + err.message);
+    }
+    // limpa o input para permitir importar o mesmo arquivo novamente
+    event.target.value = "";
+  };
+  reader.readAsText(file);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1358,6 +1760,136 @@ function printAta(){
 
   window.print();
 }
+
+// ════════════════════════════════════════════════════════════════════
+// ANEXOS
+// ════════════════════════════════════════════════════════════════════
+function handleFileSelect(event){
+  processFiles(Array.from(event.target.files));
+  event.target.value = "";
+}
+
+function handleDrop(event){
+  event.preventDefault();
+  document.getElementById("md-drop-area").classList.remove("dragover");
+  processFiles(Array.from(event.dataTransfer.files));
+}
+
+function processFiles(files){
+  files.forEach(file=>{
+    if(file.size > 5*1024*1024){ alert(`"${file.name}" é maior que 5MB e foi ignorado.`); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      currentAnexos.push({
+        id:   uid(),
+        nome: file.name,
+        tipo: file.type,
+        size: file.size,
+        data: e.target.result,
+      });
+      renderAnexosModal();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeAnexo(id){
+  if(!confirm("Remover este anexo?")) return;
+  currentAnexos = currentAnexos.filter(a=>a.id!==id);
+  // se estiver editando uma demanda existente, salva imediatamente
+  if(editingDemandaId){
+    DB.demandas = DB.demandas.map(d=>d.id===editingDemandaId ? {...d, anexos: currentAnexos} : d);
+    save();
+  }
+  renderAnexosModal();
+}
+
+function fmtSize(bytes){
+  if(bytes < 1024) return bytes+"B";
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1)+"KB";
+  return (bytes/(1024*1024)).toFixed(1)+"MB";
+}
+
+function anexoIcon(tipo){
+  if(tipo.startsWith("image/")) return "🖼️";
+  if(tipo==="application/pdf") return "📄";
+  if(tipo.includes("word")) return "📝";
+  if(tipo.includes("excel")||tipo.includes("sheet")) return "📊";
+  return "📎";
+}
+
+function renderAnexosModal(){
+  const lista = document.getElementById("md-anexos-lista");
+  if(!lista) return;
+  // atualiza título com contagem
+  const titulo = document.getElementById("md-anexos-titulo");
+  if(titulo){
+    titulo.innerHTML = currentAnexos.length
+      ? `📎 Anexos <span style="color:var(--accent2);font-weight:700">(${currentAnexos.length} arquivo${currentAnexos.length>1?"s":""})</span>`
+      : `📎 Anexos`;
+  }
+  if(!currentAnexos.length){ lista.innerHTML=""; return; }
+  lista.innerHTML = currentAnexos.map(a=>{
+    const isImg = a.tipo.startsWith("image/");
+    return `<div class="anexo-item" style="border:1px solid var(--border2)">
+      ${isImg
+        ? `<img class="anexo-thumb" src="${a.data}" onclick="openLightbox('${a.id}')" title="Clique para ampliar"/>`
+        : `<div class="anexo-icon">${anexoIcon(a.tipo)}</div>`
+      }
+      <span class="anexo-nome" title="${escHtml(a.nome)}">${escHtml(a.nome)}</span>
+      <span class="anexo-size">${fmtSize(a.size)}</span>
+      ${!isImg ? `<a href="${a.data}" download="${escHtml(a.nome)}" style="color:var(--sky);font-size:12px;text-decoration:none;margin-right:4px" title="Baixar">⬇️</a>` : ""}
+      <button onclick="removeAnexo('${a.id}')" style="
+        cursor:pointer; border:none; border-radius:6px;
+        background:#2a0f0f; color:#f87171; font-size:11px; font-weight:700;
+        padding:4px 10px; font-family:inherit; flex-shrink:0; transition:all .15s;
+      " onmouseover="this.style.background='#3d1010'" onmouseout="this.style.background='#2a0f0f'">
+        🗑 Remover
+      </button>
+    </div>`;
+  }).join("");
+}
+
+function renderAnexosView(anexos){
+  if(!anexos||!anexos.length) return "";
+  return `<div style="margin-top:12px">
+    <div class="sec-label" style="color:var(--sky);margin-bottom:8px">📎 Anexos (${anexos.length})</div>
+    <div class="anexo-lista">${anexos.map(a=>{
+      const isImg = a.tipo.startsWith("image/");
+      return `<div class="anexo-item">
+        ${isImg
+          ? `<img class="anexo-thumb" src="${a.data}" onclick="openLightboxDirect('${escHtml(a.data).replace(/'/g,"\\'")}','${escHtml(a.nome)}')" title="Clique para ampliar"/>`
+          : `<div class="anexo-icon">${anexoIcon(a.tipo)}</div>`
+        }
+        <span class="anexo-nome">${escHtml(a.nome)}</span>
+        <span class="anexo-size">${fmtSize(a.size)}</span>
+        <a href="${a.data}" download="${escHtml(a.nome)}" style="color:var(--sky);font-size:12px;text-decoration:none" title="Baixar">⬇️</a>
+      </div>`;
+    }).join("")}</div>
+  </div>`;
+}
+
+function openLightbox(anexoId){
+  const a = currentAnexos.find(x=>x.id===anexoId);
+  if(!a) return;
+  document.getElementById("lightbox-img").src = a.data;
+  document.getElementById("lightbox-img").alt = a.nome;
+  document.getElementById("lightbox").style.display = "flex";
+}
+
+function openLightboxDirect(src, nome){
+  document.getElementById("lightbox-img").src = src;
+  document.getElementById("lightbox-img").alt = nome;
+  document.getElementById("lightbox").style.display = "flex";
+}
+
+function closeLightbox(){
+  document.getElementById("lightbox").style.display = "none";
+  document.getElementById("lightbox-img").src = "";
+}
+
+// fechar lightbox com ESC
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeLightbox(); });
 
 // ════════════════════════════════════════════════════════════════════
 // HELPERS
