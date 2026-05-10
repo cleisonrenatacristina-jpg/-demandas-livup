@@ -347,6 +347,21 @@
   }
   .empty-icon { font-size: 32px; }
 
+  /* ── PARADAS DASHBOARD ── */
+  .kpi-card { background:var(--bg); border:1px solid var(--border2); border-radius:10px; padding:12px 14px; }
+  .kpi-val  { font-family:var(--mono); font-size:22px; font-weight:500; margin-bottom:2px; }
+  .kpi-lbl  { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  .bar-col   { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; }
+  .bar-fill  { width:100%; border-radius:4px 4px 0 0; transition:height .3s; min-height:2px; }
+  .bar-lbl   { font-size:9px; color:var(--muted); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
+  .bar-val   { font-size:9px; color:#f97316; font-family:var(--mono); }
+  .equip-row { display:grid; grid-template-columns:1fr 80px 80px 80px 80px; gap:0; padding:9px 12px; align-items:center; border-bottom:1px solid var(--border); font-size:12px; }
+  .equip-row:last-child { border-bottom:none; }
+  .equip-head { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; background:var(--surface); border-radius:8px 8px 0 0; }
+  .parada-reg { display:grid; grid-template-columns:120px 1fr 80px 80px 80px auto; gap:0; padding:9px 12px; align-items:center; border-bottom:1px solid var(--border); font-size:12px; }
+  .parada-reg:last-child { border-bottom:none; }
+  .parada-reg-head { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; background:var(--surface); border-radius:8px 8px 0 0; }
+
   /* ── SPACER ── */
   .flex1 { flex: 1; }
   .mt4 { margin-top: 4px; }
@@ -363,6 +378,7 @@
     <div id="nav">
       <button class="nav-tab active"      onclick="setView('kanban')"   id="tab-kanban">🗂 Kanban</button>
       <button class="nav-tab"             onclick="setView('fila')"     id="tab-fila">📑 Fila</button>
+      <button class="nav-tab"             onclick="setView('paradas')"  id="tab-paradas">⏱️ Paradas</button>
       <button class="nav-tab"             onclick="setView('setores')"  id="tab-setores">🏢 Setores</button>
     </div>
     <div class="flex1"></div>
@@ -420,6 +436,94 @@
           <button class="btn btn-amber" onclick="openAtaModal('new')">+ Nova Ata de Reunião</button>
         </div>
         <div id="reunioes-body"></div>
+      </div>
+    </div>
+
+    <!-- PARADAS -->
+    <div class="view" id="view-paradas">
+      <div id="paradas-wrap" style="overflow-y:auto;flex:1;padding:16px 20px;">
+
+        <!-- NOVA PARADA -->
+        <div style="background:var(--card);border:1px solid #3d1a00;border-radius:12px;padding:16px;margin-bottom:16px;">
+          <div style="font-size:13px;font-weight:700;color:#f97316;letter-spacing:.5px;text-transform:uppercase;margin-bottom:14px;">⏱️ Registrar Nova Parada</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="field">
+              <label>Setor</label>
+              <select id="np-setor" onchange="onNpSetorChange()" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Equipamento</label>
+              <select id="np-equipamento" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;">
+                <option value="">Selecione o setor</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Início da Parada</label>
+              <input type="datetime-local" id="np-inicio" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;"/>
+            </div>
+            <div class="field">
+              <label>Fim da Parada</label>
+              <input type="datetime-local" id="np-fim" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;"/>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">
+            <div class="field">
+              <label>Observação</label>
+              <input type="text" id="np-obs" placeholder="Motivo da parada..." style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+            </div>
+            <button class="btn" onclick="registrarParadaDireta()" style="background:#f97316;color:#0b0f1a;padding:8px 20px;font-size:13px;white-space:nowrap;">+ Registrar Parada</button>
+          </div>
+        </div>
+
+        <!-- FILTROS DASHBOARD -->
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);">📊 Dashboard de Impacto</div>
+          <div class="flex1"></div>
+          <button onclick="setFiltroHoje()" class="btn btn-ghost" style="padding:5px 12px;font-size:11px;color:#f97316;border-color:#f9731640;">📅 Hoje</button>
+          <input type="date" id="pd-data-filtro" onchange="renderParadasView()" style="background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;" title="Filtrar por data específica"/>
+          <button onclick="document.getElementById('pd-data-filtro').value='';renderParadasView()" class="btn btn-ghost" style="padding:5px 10px;font-size:11px;">✕ Geral</button>
+          <select id="pd-setor-filtro" onchange="renderParadasView()" style="background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;">
+            <option value="">Todos os setores</option>
+          </select>
+          <select id="pd-equip-filtro" onchange="renderParadasView()" style="background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;">
+            <option value="">Todos os equipamentos</option>
+          </select>
+        </div>
+
+        <!-- RESUMO DIÁRIO -->
+        <div id="pd-resumo-dia" style="display:none;margin-bottom:14px;"></div>
+
+        <!-- KPI CARDS -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;" id="pd-kpis"></div>
+
+        <!-- SEMANA + MÊS LADO A LADO -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;">
+            <div style="font-size:12px;font-weight:700;color:#f97316;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;">📅 Esta Semana — kg impactados por dia</div>
+            <div id="pd-chart-semana" style="height:140px;display:flex;align-items:flex-end;gap:6px;"></div>
+            <div id="pd-chart-semana-labels" style="display:flex;gap:6px;margin-top:4px;"></div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;">
+            <div style="font-size:12px;font-weight:700;color:#a78bfa;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;">📆 Este Mês — kg impactados por dia</div>
+            <div id="pd-chart-mes" style="height:140px;display:flex;align-items:flex-end;gap:3px;overflow:hidden;"></div>
+            <div id="pd-chart-mes-labels" style="display:flex;gap:3px;margin-top:4px;overflow:hidden;"></div>
+          </div>
+        </div>
+
+        <!-- TABELA POR EQUIPAMENTO -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--sky);letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;">🔧 Impacto por Equipamento</div>
+          <div id="pd-por-equipamento"></div>
+        </div>
+
+        <!-- LISTA COMPLETA DE PARADAS -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;">📋 Todas as Paradas Registradas</div>
+          <div id="pd-lista-todas"></div>
+        </div>
+
       </div>
     </div>
 
@@ -768,6 +872,12 @@ function render() {
   if (currentView==="fila")     renderFila();
   if (currentView==="reunioes") renderReunioes();
   if (currentView==="setores")  renderSetores();
+  if (currentView==="paradas") {
+    // define hoje como padrão no filtro de data se estiver vazio
+    const dfEl = document.getElementById("pd-data-filtro");
+    if(dfEl && !dfEl.value) dfEl.value = new Date().toISOString().slice(0,10);
+    renderParadasView();
+  }
 }
 
 function updateStats() {
@@ -1103,16 +1213,37 @@ function renderEquipamentosModal(){
     return;
   }
   vazio.style.display = "none";
-  lista.innerHTML = currentEquipamentos.map(e=>{
+  lista.innerHTML = currentEquipamentos.map((e,i)=>{
     const nome = typeof e==="string"?e:e.nome;
     const kgh  = typeof e==="string"?0:e.kgh||0;
     return `<div style="display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;">
       <span style="font-size:14px">🔧</span>
       <span style="flex:1;font-size:13px;font-weight:600">${escHtml(nome)}</span>
-      ${kgh?`<span style="font-size:11px;color:var(--accent2);font-family:var(--mono);background:var(--bg);padding:2px 8px;border-radius:6px">${kgh} kg/h</span>`:`<span style="font-size:10px;color:var(--muted)">sem capacidade</span>`}
+      <div style="display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid ${kgh?'var(--accent2)':'var(--border2)'};border-radius:8px;padding:3px 8px;" title="Clique para editar kg/h">
+        <input
+          type="number" min="0" step="0.1"
+          value="${kgh||''}"
+          placeholder="kg/h"
+          onchange="updateEquipKgh(${i}, this.value)"
+          onfocus="this.select()"
+          style="width:52px;border:none;background:transparent;font-size:12px;font-weight:700;color:var(--accent2);outline:none;font-family:var(--font);text-align:right;"
+        />
+        <span style="font-size:10px;color:var(--muted)">kg/h</span>
+      </div>
       <button onclick="removeEquipamento('${escHtml(nome)}')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:11px;font-weight:700;padding:3px 8px;font-family:inherit;">✕</button>
     </div>`;
   }).join("");
+}
+
+function updateEquipKgh(index, value){
+  const kgh = parseFloat(value)||0;
+  if(currentEquipamentos[index]){
+    const e = currentEquipamentos[index];
+    currentEquipamentos[index] = {
+      nome: typeof e==="string"?e:e.nome,
+      kgh
+    };
+  }
 }
 
 function saveSetor(){
@@ -1598,6 +1729,290 @@ Seja direto, profissional e use linguagem de negócios. Máximo 300 palavras.`;
 }
 
 // ════════════════════════════════════════════════════════════════════
+// PARADAS — DASHBOARD
+// ════════════════════════════════════════════════════════════════════
+
+// banco de paradas diretas (fora de demandas)
+// cada parada: { id, setorId, equipNome, kgh, inicio, fim, obs, minutos }
+
+function getTodasParadas(){
+  // paradas das demandas
+  const dParadas = [];
+  DB.demandas.forEach(d=>{
+    if(!d.paradas?.length) return;
+    const setor = DB.setores.find(s=>s.id===d.setorId);
+    const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,kgh:0}:e);
+    const eq = equips.find(e=>e.nome===d.equipamento);
+    d.paradas.forEach(p=>{
+      if(!p.inicio||!p.fim) return;
+      const ini = new Date(p.inicio), fim = new Date(p.fim);
+      if(fim<=ini) return;
+      const min = Math.round((fim-ini)/60000);
+      dParadas.push({
+        id: p.id, setorId: d.setorId, setorNome: setor?.nome||"",
+        equipNome: d.equipamento||"", kgh: eq?.kgh||0,
+        inicio: p.inicio, fim: p.fim, obs: p.obs||"",
+        minutos: min, fonte: "demanda", demandaTitulo: d.titulo
+      });
+    });
+  });
+  // paradas diretas salvas no DB
+  const diretas = (DB.paradasDiretas||[]);
+  return [...dParadas, ...diretas].sort((a,b)=>b.inicio.localeCompare(a.inicio));
+}
+
+function onNpSetorChange(){
+  const setorId = document.getElementById("np-setor").value;
+  const setor = DB.setores.find(s=>s.id===setorId);
+  const sel = document.getElementById("np-equipamento");
+  const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,kgh:0}:e);
+  sel.innerHTML = equips.length
+    ? `<option value="">Selecione...</option>` + equips.map(e=>`<option value="${escHtml(e.nome)}" data-kgh="${e.kgh}">${escHtml(e.nome)}${e.kgh?` — ${e.kgh} kg/h`:""}</option>`).join("")
+    : `<option value="">Nenhum equipamento</option>`;
+}
+
+function registrarParadaDireta(){
+  const setorId  = document.getElementById("np-setor").value;
+  const equipSel = document.getElementById("np-equipamento");
+  const equipNome= equipSel.value;
+  const kgh      = parseFloat(equipSel.options[equipSel.selectedIndex]?.dataset?.kgh||0)||0;
+  const inicio   = document.getElementById("np-inicio").value;
+  const fim      = document.getElementById("np-fim").value;
+  const obs      = document.getElementById("np-obs").value.trim();
+
+  if(!setorId)   return alert("Selecione o setor.");
+  if(!equipNome) return alert("Selecione o equipamento.");
+  if(!inicio||!fim) return alert("Preencha início e fim.");
+  const ini = new Date(inicio), f = new Date(fim);
+  if(f<=ini) return alert("Fim deve ser depois do início.");
+
+  const setor = DB.setores.find(s=>s.id===setorId);
+  const min = Math.round((f-ini)/60000);
+
+  if(!DB.paradasDiretas) DB.paradasDiretas=[];
+  DB.paradasDiretas.push({
+    id: uid(), setorId, setorNome: setor?.nome||"",
+    equipNome, kgh, inicio, fim, obs, minutos: min, fonte:"direta"
+  });
+  save();
+  document.getElementById("np-obs").value="";
+  renderParadasView();
+  alert(`✅ Parada registrada! ${fmtDuracao2(min)}${kgh>0?` — ${((min/60)*kgh).toFixed(1)} kg perdidos`:""}`);
+}
+
+function fmtDuracao2(min){
+  const h=Math.floor(min/60), m=min%60;
+  return h>0?`${h}h ${String(m).padStart(2,"0")}min`:`${m}min`;
+}
+
+function fmtDateShort(iso){
+  const [y,m,d]=iso.slice(0,10).split("-"); return `${d}/${m}`;
+}
+
+function fmtDateTime(iso){
+  const [dt,tm]=iso.split("T"); const [y,m,d]=dt.split("-");
+  return `${d}/${m} ${tm.slice(0,5)}`;
+}
+
+function renderParadasView(){
+  if(currentView!=="paradas") return;
+  const fSetor=document.getElementById("pd-setor-filtro");
+  const fEquip=document.getElementById("pd-equip-filtro");
+  const fData=document.getElementById("pd-data-filtro");
+  const npSetor=document.getElementById("np-setor");
+  const curFSetor=fSetor.value, curFEquip=fEquip.value;
+  const curFData=fData.value, curNpSetor=npSetor.value;
+
+  fSetor.innerHTML='<option value="">Todos os setores</option>'+DB.setores.map(s=>'<option value="'+s.id+'">'+escHtml(s.nome)+'</option>').join("");
+  npSetor.innerHTML='<option value="">Selecione...</option>'+DB.setores.map(s=>'<option value="'+s.id+'">'+escHtml(s.nome)+'</option>').join("");
+  fSetor.value=curFSetor; npSetor.value=curNpSetor;
+
+  let todas=getTodasParadas();
+  if(curFSetor) todas=todas.filter(p=>p.setorId===curFSetor);
+  const equipsUniq=[...new Set(todas.map(p=>p.equipNome).filter(Boolean))];
+  fEquip.innerHTML='<option value="">Todos os equipamentos</option>'+equipsUniq.map(e=>'<option value="'+escHtml(e)+'">'+escHtml(e)+'</option>').join("");
+  fEquip.value=curFEquip;
+  if(curFEquip) todas=todas.filter(p=>p.equipNome===curFEquip);
+
+  const paradasFiltradas=curFData?todas.filter(p=>p.inicio.slice(0,10)===curFData):todas;
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const hojeStr=hoje.toISOString().slice(0,10);
+  const dataResumo=curFData||hojeStr;
+  const pts=dataResumo.split("-");
+  const dataLabel=pts[2]+"/"+pts[1]+"/"+pts[0];
+
+  const paradaDia=todas.filter(p=>p.inicio.slice(0,10)===dataResumo);
+  const minDia=paradaDia.reduce((a,p)=>a+p.minutos,0);
+  const kgDia=paradaDia.filter(p=>p.kgh>0).reduce((a,p)=>a+(p.minutos/60*p.kgh),0);
+  const pde={};
+  paradaDia.forEach(p=>{
+    const k=p.equipNome||"Sem equipamento";
+    if(!pde[k]) pde[k]={nome:k,min:0,kg:0,n:0,kgh:p.kgh};
+    pde[k].min+=p.minutos; pde[k].n++;
+    if(p.kgh>0) pde[k].kg+=p.minutos/60*p.kgh;
+  });
+  const edr=Object.values(pde).sort((a,b)=>b.kg-a.kg);
+
+  const resumoDiv=document.getElementById("pd-resumo-dia");
+  resumoDiv.style.display="block";
+  const navHtml='<div style="display:flex;gap:6px;">'
+    +'<button onclick="irParaOntem()" class="btn btn-ghost" style="padding:4px 10px;font-size:11px;">&laquo; Anterior</button>'
+    +'<button onclick="irParaHoje()" class="btn btn-ghost" style="padding:4px 10px;font-size:11px;">Hoje</button>'
+    +'<button onclick="irParaAmanha()" class="btn btn-ghost" style="padding:4px 10px;font-size:11px;">Proximo &raquo;</button>'
+    +'</div>';
+
+  let rBody='';
+  if(!paradaDia.length){
+    rBody='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px 0;">Nenhuma parada registrada neste dia.</div>';
+  } else {
+    const eqHtml=edr.map(e=>'<div style="display:grid;grid-template-columns:1fr 70px 80px 90px;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;">'
+      +'<span style="font-size:12px;font-weight:700;">&#9881; '+escHtml(e.nome)+'</span>'
+      +'<span style="font-size:11px;color:#f97316;text-align:right">'+e.n+' parada'+(e.n>1?'s':'')+'</span>'
+      +'<span style="font-size:11px;color:#f59e0b;text-align:right">'+fmtDuracao2(e.min)+'</span>'
+      +'<span style="font-size:13px;font-weight:700;color:'+(e.kg>0?'#ef4444':'var(--muted)')+';text-align:right">'+(e.kg>0?'-'+e.kg.toFixed(1)+' kg':'--')+'</span>'
+      +'</div>').join('');
+    rBody='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">'
+      +'<div class="kpi-card" style="border-color:#f9731640;"><div class="kpi-val" style="color:#f97316">'+paradaDia.length+'</div><div class="kpi-lbl">Paradas no dia</div></div>'
+      +'<div class="kpi-card" style="border-color:#f9731640;"><div class="kpi-val" style="color:#ef4444">'+fmtDuracao2(minDia)+'</div><div class="kpi-lbl">Tempo total parado</div></div>'
+      +'<div class="kpi-card" style="border-color:#ef444460;"><div class="kpi-val" style="color:#ef4444">'+(kgDia>0?kgDia.toFixed(1)+' kg':'--')+'</div><div class="kpi-lbl">Kg deixou de produzir</div></div>'
+      +'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">Por equipamento</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;">'+eqHtml+'</div>'
+      +'<div style="margin-top:12px;border-top:1px solid #f9731620;padding-top:10px;">'
+      +'<span style="font-size:11px;color:var(--muted);">Total do dia: </span>'
+      +'<span style="font-size:14px;font-weight:700;color:#ef4444;">'+(kgDia>0?kgDia.toFixed(1)+' kg deixaram de ser produzidos':'Informe kg/h nos equipamentos')+'</span>'
+      +'</div>';
+  }
+
+  resumoDiv.innerHTML='<div style="background:#1a0d00;border:1px solid #f9731640;border-radius:12px;padding:16px;">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">'
+    +'<span style="font-size:14px;font-weight:700;color:#f97316;">&#128203; Resumo do Dia &mdash; '+dataLabel+'</span>'
+    +(dataResumo===hojeStr?'<span style="background:#f9731620;color:#f97316;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid #f9731640">HOJE</span>':'')
+    +'<div class="flex1"></div>'+navHtml+'</div>'+rBody+'</div>';
+
+  const totalMin=paradasFiltradas.reduce((a,p)=>a+p.minutos,0);
+  const hoje7=new Date(hoje); hoje7.setDate(hoje7.getDate()-6);
+  const sKg=todas.filter(p=>new Date(p.inicio)>=hoje7&&p.kgh>0).reduce((a,p)=>a+(p.minutos/60*p.kgh),0);
+  const mIni=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+  const mKg=todas.filter(p=>new Date(p.inicio)>=mIni&&p.kgh>0).reduce((a,p)=>a+(p.minutos/60*p.kgh),0);
+  const lbl=curFData?'Para '+dataLabel:'Todos os periodos';
+
+  document.getElementById("pd-kpis").innerHTML=
+    '<div class="kpi-card"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;">'+lbl+'</div>'
+    +'<div class="kpi-val" style="color:#f97316">'+paradasFiltradas.length+'</div><div class="kpi-lbl">Paradas no periodo</div></div>'
+    +'<div class="kpi-card"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;">'+lbl+'</div>'
+    +'<div class="kpi-val" style="color:#ef4444">'+fmtDuracao2(totalMin)+'</div><div class="kpi-lbl">Tempo total parado</div></div>'
+    +'<div class="kpi-card"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Ultimos 7 dias</div>'
+    +'<div class="kpi-val" style="color:#a78bfa">'+(sKg>0?sKg.toFixed(1)+' kg':'--')+'</div><div class="kpi-lbl">Kg perdidos esta semana</div></div>'
+    +'<div class="kpi-card"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Mes atual</div>'
+    +'<div class="kpi-val" style="color:#ef4444">'+(mKg>0?mKg.toFixed(1)+' kg':'--')+'</div><div class="kpi-lbl">Kg perdidos este mes</div></div>';
+
+  renderBarChart("pd-chart-semana","pd-chart-semana-labels",todas,7,"#f97316",false,curFData||hojeStr);
+  const dm=new Date(hoje.getFullYear(),hoje.getMonth()+1,0).getDate();
+  renderBarChart("pd-chart-mes","pd-chart-mes-labels",todas,dm,"#a78bfa",true,curFData||hojeStr);
+
+  const pe={};
+  paradasFiltradas.forEach(p=>{
+    const k=p.equipNome||"Sem equipamento";
+    if(!pe[k]) pe[k]={nome:k,kgh:p.kgh,paradas:0,minutos:0,kg:0};
+    pe[k].paradas++; pe[k].minutos+=p.minutos;
+    if(p.kgh>0) pe[k].kg+=p.minutos/60*p.kgh;
+  });
+  const er=Object.values(pe).sort((a,b)=>b.kg-a.kg||b.minutos-a.minutos);
+  document.getElementById("pd-por-equipamento").innerHTML=!er.length
+    ?'<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">Nenhuma parada no periodo.</div>'
+    :'<div class="equip-row equip-head"><span>Equipamento</span><span style="text-align:right">Paradas</span><span style="text-align:right">Tempo</span><span style="text-align:right">Kg/h</span><span style="text-align:right;color:#ef4444">Kg perdidos</span></div>'
+      +er.map(e=>'<div class="equip-row">'
+        +'<span style="font-weight:600">&#9881; '+escHtml(e.nome)+'</span>'
+        +'<span style="text-align:right;color:#f97316">'+e.paradas+'</span>'
+        +'<span style="text-align:right;color:#f59e0b">'+fmtDuracao2(e.minutos)+'</span>'
+        +'<span style="text-align:right;color:var(--muted)">'+(e.kgh>0?e.kgh+' kg/h':'--')+'</span>'
+        +'<span style="text-align:right;font-weight:700;color:#ef4444">'+(e.kg>0?e.kg.toFixed(1)+' kg':'--')+'</span>'
+        +'</div>').join("");
+
+  const listaEl=document.getElementById("pd-lista-todas");
+  const titulo=curFData?'Paradas de '+dataLabel:'Todas as Paradas';
+  listaEl.previousElementSibling.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">'+titulo+' ('+paradasFiltradas.length+')</div>';
+  listaEl.innerHTML=!paradasFiltradas.length
+    ?'<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">Nenhuma parada no periodo.</div>'
+    :'<div class="parada-reg parada-reg-head"><span>Data/Hora</span><span>Equipamento</span><span style="text-align:right">Duracao</span><span style="text-align:right">Kg perdidos</span><span>Observacao</span><span></span></div>'
+      +paradasFiltradas.map(p=>{
+        const kg=p.kgh>0?(p.minutos/60*p.kgh).toFixed(1):null;
+        return '<div class="parada-reg">'
+          +'<span style="font-size:11px;color:var(--muted)">'+fmtDateTime(p.inicio)+'<br>-&gt; '+fmtDateTime(p.fim)+'</span>'
+          +'<span style="font-weight:600">&#9881; '+escHtml(p.equipNome||'--')+'<br><span style="font-size:10px;color:var(--muted)">'+escHtml(p.setorNome||'')+'</span></span>'
+          +'<span style="text-align:right;color:#f59e0b">'+fmtDuracao2(p.minutos)+'</span>'
+          +'<span style="text-align:right;font-weight:700;color:'+(kg?'#ef4444':'var(--muted)')+';">'+(kg?'-'+kg+' kg':'--')+'</span>'
+          +'<span style="font-size:11px;color:var(--muted)">'+escHtml(p.obs||'--')+(p.fonte==="demanda"?'<br><span style="color:var(--sky)">&#128203; '+escHtml(p.demandaTitulo||'')+'</span>':'')+'</span>'
+          +(p.fonte==="direta"?'<button onclick="deletarParadaDireta(\''+p.id+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 7px;font-family:inherit;">X</button>':'<span></span>')
+          +'</div>';
+      }).join("");
+}
+
+function irParaHoje(){
+  document.getElementById("pd-data-filtro").value="";
+  renderParadasView();
+}
+function irParaOntem(){
+  const cur=document.getElementById("pd-data-filtro").value;
+  const base=cur?new Date(cur+"T00:00:00"):new Date();
+  base.setDate(base.getDate()-1);
+  document.getElementById("pd-data-filtro").value=base.toISOString().slice(0,10);
+  renderParadasView();
+}
+function irParaAmanha(){
+  const cur=document.getElementById("pd-data-filtro").value;
+  const base=cur?new Date(cur+"T00:00:00"):new Date();
+  base.setDate(base.getDate()+1);
+  document.getElementById("pd-data-filtro").value=base.toISOString().slice(0,10);
+  renderParadasView();
+}
+
+function deletarParadaDireta(id){
+  if(!confirm("Remover esta parada?")) return;
+  DB.paradasDiretas = (DB.paradasDiretas||[]).filter(p=>p.id!==id);
+  save(); renderParadasView();
+}
+
+function setFiltroHoje(){
+  const hoje = new Date().toISOString().slice(0,10);
+  document.getElementById("pd-data-filtro").value = hoje;
+  renderParadasView();
+}
+
+function renderBarChart(chartId, labelsId, todas, dias, cor, isMes=false, diaDestaque=""){
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const days = [];
+  for(let i=dias-1;i>=0;i--){
+    const d = new Date(hoje); d.setDate(d.getDate()-i);
+    days.push(d);
+  }
+  const vals = days.map(d=>{
+    const dStr = d.toISOString().slice(0,10);
+    const ps = todas.filter(p=>p.inicio.slice(0,10)===dStr&&p.kgh>0);
+    return ps.reduce((a,p)=>a+(p.minutos/60*p.kgh),0);
+  });
+  const maxVal = Math.max(...vals,1);
+  const chart  = document.getElementById(chartId);
+  const labels = document.getElementById(labelsId);
+  chart.innerHTML  = vals.map((v,i)=>{
+    const dStr = days[i].toISOString().slice(0,10);
+    const isDestaque = diaDestaque && dStr===diaDestaque;
+    const barCor = isDestaque ? "#ffffff" : (v>0?cor:"var(--border2)");
+    return `<div class="bar-col" title="${dStr}: ${v>0?v.toFixed(1)+" kg":"sem paradas"}">
+      ${v>0?`<span class="bar-val" style="font-size:8px;color:${isDestaque?"#fff":cor}">${v.toFixed(0)}</span>`:""}
+      <div class="bar-fill" style="height:${Math.max((v/maxVal)*120,v>0?4:1)}px;background:${barCor};${isDestaque?"outline:2px solid #f97316;outline-offset:1px":""}"></div>
+    </div>`;
+  }).join("");
+  labels.innerHTML = days.map((d,i)=>{
+    const dStr = d.toISOString().slice(0,10);
+    const isDestaque = diaDestaque && dStr===diaDestaque;
+    const lbl = isMes ? d.getDate() : ["D","S","T","Q","Q","S","S"][d.getDay()];
+    return `<div class="bar-col"><span class="bar-lbl" style="${isDestaque?"color:#f97316;font-weight:700":""}">${lbl}</span></div>`;
+  }).join("");
+}
+
+// ════════════════════════════════════════════════════════════════════
 // BACKUP — EXPORTAR / IMPORTAR
 // ════════════════════════════════════════════════════════════════════
 function exportBackup(){
@@ -1909,6 +2324,17 @@ function escHtml(str){
 // ════════════════════════════════════════════════════════════════════
 render();
 updateApiKeyBtn();
+
+// default datetime para nova parada
+(function(){
+  const now = new Date();
+  now.setSeconds(0,0);
+  const iso = now.toISOString().slice(0,16);
+  const ini = document.getElementById("np-inicio");
+  const fim = document.getElementById("np-fim");
+  if(ini) ini.value = iso;
+  if(fim) fim.value = iso;
+})();
 </script>
 </body>
 </html>
