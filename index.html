@@ -518,6 +518,7 @@
               <select id="np-receita" onchange="onNpReceitaChange()" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;">
                 <option value="">— Nenhuma / não informar —</option>
               </select>
+              <div id="np-receita-info" style="display:none;margin-top:5px;font-size:11px;color:#a78bfa;background:#1a0d2a;border:1px solid #a78bfa40;border-radius:7px;padding:5px 8px;"></div>
             </div>
             <div class="field" id="np-tipo-wrap">
               <label>Tipo de produção</label>
@@ -898,6 +899,61 @@ const PRIO = {
 
 const CORES = ["#3b82f6","#f59e0b","#22c55e","#a78bfa","#ef4444","#fb923c","#ec4899","#14b8a6","#e879f9","#84cc16"];
 
+const RECEITAS_LIVUP = [
+  {id:"rec_arroz_integral",nome:"Arroz integral",tipo:"ciclo",cicloMin:90,cicloKg:274.0,caldeira:"Normal"},
+  {id:"rec_feij_o_carioca_cozido",nome:"Feijão carioca cozido",tipo:"ciclo",cicloMin:120,cicloKg:325.0,caldeira:"Autoclavada"},
+  {id:"rec_fundo_de_legumes",nome:"Fundo de Legumes",tipo:"ciclo",cicloMin:180,cicloKg:400.0,caldeira:"Normal"},
+  {id:"rec_fs___arroz",nome:"FS - Arroz",tipo:"ciclo",cicloMin:60,cicloKg:277.0,caldeira:"Normal"},
+  {id:"rec_molho_para_estrogonofe",nome:"Molho para Estrogonofe",tipo:"ciclo",cicloMin:120,cicloKg:210.0,caldeira:"Normal"},
+  {id:"rec_feijoada",nome:"Feijoada",tipo:"ciclo",cicloMin:180,cicloKg:350.0,caldeira:"Autoclavada"},
+  {id:"rec_carne_mo_da_cozida",nome:"Carne moída cozida",tipo:"ciclo",cicloMin:120,cicloKg:160.0,caldeira:"Normal"},
+  {id:"rec_pur__de_batata",nome:"Purê de Batata",tipo:"ciclo",cicloMin:120,cicloKg:150.0,caldeira:"Autoclavada"},
+  {id:"rec_molho_sugo",nome:"Molho sugo",tipo:"ciclo",cicloMin:120,cicloKg:400.0,caldeira:"Normal"},
+  {id:"rec_molho_bolonhesa",nome:"Molho bolonhesa",tipo:"ciclo",cicloMin:150,cicloKg:250.0,caldeira:"Normal"},
+  {id:"rec_molho__f395",nome:"Molho (F395)",tipo:"ciclo",cicloMin:90,cicloKg:93.0,caldeira:"Normal"},
+  {id:"rec_base_frango_desfiado",nome:"Base frango desfiado",tipo:"ciclo",cicloMin:90,cicloKg:150.0,caldeira:"Autoclavada"},
+  {id:"rec_feij_o_preto",nome:"Feijão Preto",tipo:"ciclo",cicloMin:120,cicloKg:325.0,caldeira:"Autoclavada"},
+  {id:"rec_carne_temperada_e_cozida",nome:"Carne temperada e cozida",tipo:"ciclo",cicloMin:210,cicloKg:170.0,caldeira:"Autoclavada"},
+  {id:"rec_creme_de_milho",nome:"Creme de milho",tipo:"ciclo",cicloMin:150,cicloKg:376.0,caldeira:"Normal"},
+  {id:"rec_pernil_desfiado_temperad",nome:"Pernil desfiado temperado",tipo:"ciclo",cicloMin:240,cicloKg:230.0,caldeira:"Autoclavada"},
+  {id:"rec_pur__de_ab_bora",nome:"Purê de Abóbora",tipo:"ciclo",cicloMin:150,cicloKg:225.0,caldeira:"Autoclavada"},
+  {id:"rec_base_frango_desfiado_sem",nome:"Base frango desfiado sem sal",tipo:"ciclo",cicloMin:90,cicloKg:150.0,caldeira:"Autoclavada"},
+  {id:"rec_molho_de_tomate_sem_manj",nome:"Molho de tomate sem manjericão",tipo:"ciclo",cicloMin:120,cicloKg:400.0,caldeira:"Normal"},
+  {id:"rec_carne_mo_da_com_cenoura",nome:"Carne moída com cenoura e vagem",tipo:"ciclo",cicloMin:120,cicloKg:160.0,caldeira:"Normal"},
+  {id:"rec_frango_desfiado",nome:"Frango Desfiado",tipo:"ciclo",cicloMin:90,cicloKg:150.0,caldeira:"Autoclavada"},
+  {id:"rec_caldo_verde",nome:"Caldo verde",tipo:"ciclo",cicloMin:150,cicloKg:250.0,caldeira:"Autoclavada"},
+  {id:"rec_creme_de_couve_flor",nome:"Creme de couve-flor",tipo:"ciclo",cicloMin:120,cicloKg:335.0,caldeira:"Autoclavada"},
+  {id:"rec_frango_desfiado__canja",nome:"Frango desfiado (Canja)",tipo:"ciclo",cicloMin:90,cicloKg:150.0,caldeira:"Autoclavada"},
+  {id:"rec_caldo_para_sopa",nome:"Caldo para sopa",tipo:"ciclo",cicloMin:120,cicloKg:300.0,caldeira:"Normal"},
+  {id:"rec_lagarto_temperado_e_cozi",nome:"Lagarto temperado e cozido",tipo:"ciclo",cicloMin:120,cicloKg:31.0,caldeira:"Autoclavada"},
+  {id:"rec_base_de_pur__de_batata",nome:"Base de purê de batata",tipo:"ciclo",cicloMin:120,cicloKg:150.0,caldeira:"Autoclavada"},
+  {id:"rec_arroz_parboilizado_e_com",nome:"Arroz Parboilizado E-comm",tipo:"ciclo",cicloMin:120,cicloKg:400.0,caldeira:"Normal"},
+  {id:"rec_fundo_de_legumes__risoto",nome:"Fundo de legumes (Risoto)",tipo:"ciclo",cicloMin:180,cicloKg:400.0,caldeira:"Normal"},
+  {id:"rec_carne_mo_da__escondidinh",nome:"Carne moída (Escondidinho)",tipo:"ciclo",cicloMin:120,cicloKg:160.0,caldeira:"Normal"},
+  {id:"rec_molho_estrogonofe",nome:"Molho estrogonofe",tipo:"ciclo",cicloMin:120,cicloKg:210.0,caldeira:"Normal"},
+  {id:"rec_lentilha_pomodoro",nome:"Lentilha pomodoro",tipo:"ciclo",cicloMin:120,cicloKg:232.0,caldeira:"Normal"},
+  {id:"rec_molho_para_estrogonofe",nome:"Molho para Estrogonofe (cogumelo)",tipo:"ciclo",cicloMin:120,cicloKg:210.0,caldeira:"Normal"},
+  {id:"rec_picadinho_de_carne",nome:"Picadinho de carne",tipo:"ciclo",cicloMin:210,cicloKg:170.0,caldeira:"Autoclavada"},
+  {id:"rec_base_frango_desfiado__ba",nome:"Base Frango Desfiado (Batata Doce)",tipo:"ciclo",cicloMin:90,cicloKg:150.0,caldeira:"Autoclavada"},
+  {id:"rec_pur__de_batata_doce",nome:"Purê de Batata Doce",tipo:"ciclo",cicloMin:150,cicloKg:257.0,caldeira:"Autoclavada"},
+  {id:"rec_molho_para_frango",nome:"Molho para Frango",tipo:"ciclo",cicloMin:120,cicloKg:210.0,caldeira:"Normal"},
+  {id:"rec_feijoada_vegetariana",nome:"Feijoada vegetariana",tipo:"ciclo",cicloMin:120,cicloKg:250.0,caldeira:"Autoclavada"},
+  {id:"rec_prote_na_de_soja_com_mol",nome:"Proteína de soja com molho",tipo:"ciclo",cicloMin:120,cicloKg:250.0,caldeira:"Normal"},
+  {id:"rec_prote_na_de_soja",nome:"Proteína de soja",tipo:"ciclo",cicloMin:120,cicloKg:250.0,caldeira:"Normal"},
+  {id:"rec_mix_de_quinoa_com_legume",nome:"Mix de quinoa com legumes",tipo:"ciclo",cicloMin:90,cicloKg:75.0,caldeira:"Normal"},
+  {id:"rec_arroz_7_gr_os",nome:"Arroz 7 grãos",tipo:"ciclo",cicloMin:90,cicloKg:150.0,caldeira:"Normal"},
+  {id:"rec_carne_de_panela",nome:"Carne de panela",tipo:"ciclo",cicloMin:240,cicloKg:230.0,caldeira:"Autoclavada"},
+  {id:"rec_pur__de_mandioquinha",nome:"Purê de mandioquinha",tipo:"ciclo",cicloMin:60,cicloKg:300.0,caldeira:"Normal"},
+  {id:"rec_carne_mo_da_cozida__bolo",nome:"Carne moída cozida (bolonhesa integral)",tipo:"ciclo",cicloMin:180,cicloKg:250.0,caldeira:"Normal"},
+  {id:"rec_bolonhesa_580g",nome:"Bolonhesa 580g",tipo:"ciclo",cicloMin:150,cicloKg:250.0,caldeira:"Normal"},
+  {id:"rec_molho_com_ervilha",nome:"Molho com ervilha",tipo:"ciclo",cicloMin:90,cicloKg:200.0,caldeira:"Normal"},
+  {id:"rec_base_para_pur__de_batata",nome:"Base para purê de batata",tipo:"ciclo",cicloMin:120,cicloKg:150.0,caldeira:"Autoclavada"},
+  {id:"rec_pur__de_batata_com_br_co",nome:"Purê de batata com brócolis",tipo:"ciclo",cicloMin:120,cicloKg:150.0,caldeira:"Autoclavada"},
+  {id:"rec_molho_branco",nome:"Molho branco",tipo:"ciclo",cicloMin:120,cicloKg:360.0,caldeira:"Normal"},
+  {id:"rec_molho_branco_com_espinaf",nome:"Molho branco com espinafre",tipo:"ciclo",cicloMin:120,cicloKg:350.0,caldeira:"Normal"},
+  {id:"rec_molho_de_tomate__camar_o",nome:"Molho de tomate (camarão)",tipo:"ciclo",cicloMin:120,cicloKg:336.0,caldeira:"Normal"},
+];
+
 const INITIAL = {
   setores:[
     {id:"s1",nome:"TI",         cor:"#3b82f6", descricao:"Infraestrutura e sistemas"},
@@ -906,13 +962,25 @@ const INITIAL = {
   ],
   demandas:[],
   reunioes:[],
-  receitas:[],
+  receitas:RECEITAS_LIVUP,
 };
 
 // ════════════════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════════════════
-let DB = (() => { try { return JSON.parse(localStorage.getItem("df3"))||INITIAL; } catch { return INITIAL; } })();
+let DB = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem("df3"));
+    if(saved) {
+      // Merge: garante receitas LivUp sempre disponíveis, mantém personalizadas
+      const idsLivup = new Set(RECEITAS_LIVUP.map(r=>r.id));
+      const custom = (saved.receitas||[]).filter(r=>!idsLivup.has(r.id));
+      saved.receitas = [...RECEITAS_LIVUP, ...custom];
+      return saved;
+    }
+    return INITIAL;
+  } catch { return INITIAL; }
+})();
 let currentView = "kanban";
 let editingDemandaId = null;
 let editingSetorId   = null;
@@ -2222,7 +2290,33 @@ function onNpReceitaChange(){
   const receitaId = document.getElementById("np-receita").value;
   if(!receitaId) return;
   const receita = (DB.receitas||[]).find(r=>r.id===receitaId);
-  if(receita?.tipo) setNpTipo(receita.tipo);
+  if(!receita) return;
+  // define tipo automaticamente com base na receita
+  if(receita.tipo) setNpTipo(receita.tipo, true);
+  // se for ciclo e tiver dados, preenche os campos
+  if(receita.tipo==="ciclo"){
+    const manualArea = document.getElementById("np-ciclo-manual-area");
+    const cicloMinEl = document.getElementById("np-ciclo-min");
+    const cicloKgEl  = document.getElementById("np-ciclo-kg");
+    if(receita.cicloMin>0 && cicloMinEl) cicloMinEl.value = receita.cicloMin;
+    if(receita.cicloKg>0 && cicloKgEl)  cicloKgEl.value  = receita.cicloKg;
+    if(manualArea && receita.cicloMin>0 && receita.cicloKg>0){
+      // mostra os dados mas como leitura (vindos da receita)
+      manualArea.style.display = "block";
+      manualArea.style.borderColor = "#a78bfa40";
+      const label = manualArea.querySelector("div");
+      if(label) label.innerHTML = `🔄 Ciclo da Receita <span style="font-size:10px;color:var(--muted);font-weight:400;">(${receita.caldeira||"Normal"})</span>`;
+    }
+  }
+  // mostra info da caldeira
+  const infoEl = document.getElementById("np-receita-info");
+  if(infoEl && receita.cicloMin){
+    const h = Math.floor(receita.cicloMin/60);
+    const m = receita.cicloMin%60;
+    const dur = h>0?`${h}h${m>0?" "+m+"min":""}`:m+"min";
+    infoEl.style.display="block";
+    infoEl.innerHTML=`🍳 <b>${receita.nome}</b> · ⏱️ ${dur}/ciclo · 📦 ${receita.cicloKg}kg/ciclo · 🔧 ${receita.caldeira||"Normal"}`;
+  }
 }
 
 function registrarParadaDireta(){
@@ -2255,8 +2349,9 @@ function registrarParadaDireta(){
   const tipoFinal = npTipoAtual;
 
   if(tipoFinal==="ciclo"){
-    cicloMinFinal = equipCicloMin || parseFloat(document.getElementById("np-ciclo-min")?.value||0)||0;
-    cicloKgFinal  = equipCicloKg  || parseFloat(document.getElementById("np-ciclo-kg")?.value||0)||0;
+    // Prioridade: receita > equipamento > campo manual
+    cicloMinFinal = (receita?.cicloMin||0) || equipCicloMin || parseFloat(document.getElementById("np-ciclo-min")?.value||0)||0;
+    cicloKgFinal  = (receita?.cicloKg||0)  || equipCicloKg  || parseFloat(document.getElementById("np-ciclo-kg")?.value||0)||0;
     if(cicloMinFinal>0 && cicloKgFinal>0){
       const ciclos = Math.floor(min / cicloMinFinal);
       kgPerdidos = ciclos * cicloKgFinal;
@@ -2271,18 +2366,23 @@ function registrarParadaDireta(){
     equipNome, tipo: tipoFinal, kgh,
     cicloMin: cicloMinFinal, cicloKg: cicloKgFinal,
     receitaId, receitaNome: receita?.nome||"",
+    receitaCaldeira: receita?.caldeira||"",
     inicio, fim, obs, minutos: min, kgPerdidos,
     fonte:"direta"
   });
   save();
   document.getElementById("np-obs").value="";
-  document.getElementById("np-receita").value="";
+  const recEl = document.getElementById("np-receita");
+  if(recEl) recEl.value="";
+  const infoEl = document.getElementById("np-receita-info");
+  if(infoEl) infoEl.style.display="none";
   renderParadasView();
 
   let msg = `✅ Parada registrada! ${fmtDuracao2(min)}`;
   if(tipoFinal==="ciclo" && cicloMinFinal>0 && cicloKgFinal>0){
     const ciclos = Math.floor(min/cicloMinFinal);
-    msg += ` — ${ciclos} ciclo(s) perdido(s) = ${kgPerdidos.toFixed(1)} kg`;
+    msg += `\n🔄 ${ciclos} ciclo(s) × ${cicloKgFinal}kg = ${kgPerdidos.toFixed(1)} kg perdidos`;
+    if(receita) msg += `\n🍳 ${receita.nome} (${receita.caldeira||"Normal"})`;
   } else if(kgPerdidos>0){
     msg += ` — ${kgPerdidos.toFixed(1)} kg perdidos`;
   }
