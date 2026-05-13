@@ -38,16 +38,16 @@
 
   /* ── TOPBAR ── */
   #topbar {
-    display: flex; align-items: center; gap: 8px;
-    padding: 0 16px; height: 56px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 12px; height: 56px; flex-shrink: 0;
     background: var(--surface); border-bottom: 1px solid var(--border);
-    overflow-x: auto;
+    flex-wrap: nowrap; overflow: hidden;
   }
-  #logo { font-size: 17px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; white-space: nowrap; }
+  #logo { font-size: 17px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; white-space: nowrap; flex-shrink: 0; }
   #logo span { color: var(--accent2); }
 
   /* ── NAV TABS ── */
-  #nav { display: flex; gap: 4px; flex-shrink: 0; }
+  #nav { display: flex; gap: 4px; flex-shrink: 1; overflow-x: auto; min-width: 0; }
   .nav-tab {
     cursor: pointer; padding: 6px 14px; border-radius: 7px;
     font-size: 12px; font-weight: 700; border: 1px solid var(--border2);
@@ -383,12 +383,11 @@
       <button class="nav-tab"             onclick="setView('setores')"  id="tab-setores">🏢 Setores</button>
     </div>
     <div class="flex1"></div>
-    <button class="btn btn-ghost" onclick="exportBackup()" title="Exportar backup completo">💾 Backup</button>
-    <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()" title="Importar backup">📂 Importar</button>
+    <button class="btn btn-ghost" onclick="exportBackup()" title="Exportar backup completo" style="flex-shrink:0;padding:6px 10px;">💾</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()" title="Importar backup" style="flex-shrink:0;padding:6px 10px;">📂</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importBackup(event)"/>
-    <button class="btn btn-ghost" onclick="abrirConfigSlack()" title="Configurar Slack" style="display:flex;align-items:center;gap:5px;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="opacity:.7"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
-      Slack
+    <button class="btn btn-ghost" onclick="abrirConfigSlack()" title="Configurar Slack" style="flex-shrink:0;padding:6px 10px;display:flex;align-items:center;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="opacity:.7"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
     </button>
 
     <!-- MODAL CONFIG SLACK -->
@@ -2381,7 +2380,7 @@ function renderParadasView(){
     +'<span style="font-size:14px;font-weight:700;color:#f97316;">&#128203; Resumo do Dia &mdash; '+dataLabel+'</span>'
     +(dataResumo===hojeStr?'<span style="background:#f9731620;color:#f97316;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid #f9731640">HOJE</span>':'')
     +'<div class="flex1"></div>'
-    +(paradaDia.length?'<button onclick="enviarResumoWa(\''+dataResumo+'\')" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:none;background:#25d366;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">📲 Enviar no WhatsApp</button>':'')
+    +'<button onclick="enviarResumoWa(\''+dataResumo+'\')" style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;border:none;background:#25d366;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">📲 Enviar no WhatsApp</button>'
     +navHtml+'</div>'+rBody+'</div>';
 
   const totalMin=paradasFiltradas.reduce((a,p)=>a+p.minutos,0);
