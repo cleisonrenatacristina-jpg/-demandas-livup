@@ -443,6 +443,26 @@
     <div class="view" id="view-paradas">
       <div id="paradas-wrap" style="overflow-y:auto;flex:1;padding:16px 20px;">
 
+        <!-- RECEITAS CADASTRADAS -->
+        <div style="background:var(--card);border:1px solid #1a2a3d;border-radius:12px;padding:14px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <div style="font-size:13px;font-weight:700;color:#60a5fa;letter-spacing:.5px;text-transform:uppercase;flex:1;">🍳 Receitas Cadastradas</div>
+            <button class="btn btn-ghost" onclick="toggleReceitasPanel()" id="btn-toggle-receitas" style="font-size:11px;padding:4px 12px;color:#60a5fa;border-color:#1e3a5f;">+ Gerenciar Receitas</button>
+          </div>
+          <div id="receitas-panel" style="display:none;">
+            <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+              <input id="rec-nome" placeholder="Nome da receita..." style="flex:1;min-width:160px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+              <select id="rec-tipo" style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;">
+                <option value="kgh">⚖️ kg/h</option>
+                <option value="ciclo">🔄 Por ciclo</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="addReceita()">+ Adicionar</button>
+            </div>
+            <div id="receitas-lista" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;"></div>
+          </div>
+          <div id="receitas-resumo" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        </div>
+
         <!-- NOVA PARADA -->
         <div style="background:var(--card);border:1px solid #3d1a00;border-radius:12px;padding:16px;margin-bottom:16px;">
           <div style="font-size:13px;font-weight:700;color:#f97316;letter-spacing:.5px;text-transform:uppercase;margin-bottom:14px;">⏱️ Registrar Nova Parada</div>
@@ -455,7 +475,7 @@
             </div>
             <div class="field">
               <label>Equipamento</label>
-              <select id="np-equipamento" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;">
+              <select id="np-equipamento" onchange="onNpEquipChange()" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;">
                 <option value="">Selecione o setor</option>
               </select>
             </div>
@@ -466,6 +486,36 @@
             <div class="field">
               <label>Fim da Parada</label>
               <input type="datetime-local" id="np-fim" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;"/>
+            </div>
+          </div>
+          <!-- RECEITA + TIPO -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;" id="np-receita-area" style="display:none;">
+            <div class="field">
+              <label>🍳 Receita que estava produzindo</label>
+              <select id="np-receita" onchange="onNpReceitaChange()" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;">
+                <option value="">— Nenhuma / não informar —</option>
+              </select>
+            </div>
+            <div class="field" id="np-tipo-wrap">
+              <label>Tipo de produção</label>
+              <div style="display:flex;gap:6px;margin-top:2px;">
+                <button id="np-tipo-kgh" onclick="setNpTipo('kgh')" class="btn btn-ghost" style="flex:1;font-size:11px;padding:6px 4px;border-color:#f9731640;color:#f97316;">⚖️ kg/h</button>
+                <button id="np-tipo-ciclo" onclick="setNpTipo('ciclo')" class="btn btn-ghost" style="flex:1;font-size:11px;padding:6px 4px;">🔄 Ciclo</button>
+              </div>
+            </div>
+          </div>
+          <!-- INFO DO CICLO (se tipo=ciclo e não tem ciclo no equipamento) -->
+          <div id="np-ciclo-manual-area" style="display:none;background:var(--bg);border:1px solid #f9731640;border-radius:8px;padding:10px;margin-bottom:10px;">
+            <div style="font-size:11px;color:#f97316;font-weight:700;margin-bottom:6px;">🔄 Configuração do Ciclo</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="field">
+                <label>Duração do ciclo (min)</label>
+                <input type="number" id="np-ciclo-min" min="1" placeholder="Ex: 45" style="width:100%;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+              </div>
+              <div class="field">
+                <label>kg produzidos por ciclo</label>
+                <input type="number" id="np-ciclo-kg" min="0" step="0.1" placeholder="Ex: 12" style="width:100%;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+              </div>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">
@@ -669,19 +719,39 @@
           <div class="sec-label" style="color:var(--sky);flex:1;border:none;margin:0;padding:0">🔧 Equipamentos do Setor</div>
           <button class="btn btn-primary btn-sm" onclick="addEquipamento()">+ Adicionar</button>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
           <input id="ms-equip-input" placeholder="Nome do equipamento..." style="
-            flex:1;background:var(--card);border:1px solid var(--border2);
+            flex:1;min-width:150px;background:var(--card);border:1px solid var(--border2);
             border-radius:8px;padding:7px 12px;color:var(--text);
             font-family:inherit;font-size:13px;outline:none;
-          " onkeydown="if(event.key==='Enter')document.getElementById('ms-equip-kgh').focus()"/>
-          <input id="ms-equip-kgh" type="number" min="0" step="0.1" placeholder="kg/h" style="
-            width:80px;background:var(--card);border:1px solid var(--border2);
+          " onkeydown="if(event.key==='Enter')document.getElementById('ms-equip-tipo').focus()"/>
+          <select id="ms-equip-tipo" onchange="onEquipTipoChange()" style="background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;">
+            <option value="kgh">⚖️ kg/h</option>
+            <option value="ciclo">🔄 Por ciclo</option>
+          </select>
+        </div>
+        <div id="ms-equip-kgh-wrap" style="display:flex;gap:8px;margin-bottom:8px;">
+          <input id="ms-equip-kgh" type="number" min="0" step="0.1" placeholder="Capacidade em kg/h" style="
+            flex:1;background:var(--card);border:1px solid var(--border2);
             border-radius:8px;padding:7px 10px;color:var(--text);
-            font-family:inherit;font-size:13px;outline:none;text-align:center;
+            font-family:inherit;font-size:13px;outline:none;
           " onkeydown="if(event.key==='Enter')addEquipamento()"/>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">📌 Informe o nome e a capacidade em kg por hora do equipamento</div>
+        <div id="ms-equip-ciclo-wrap" style="display:none;gap:8px;margin-bottom:8px;">
+          <input id="ms-equip-ciclo-min" type="number" min="1" step="1" placeholder="Duração do ciclo (min)" style="
+            flex:1;background:var(--card);border:1px solid var(--border2);
+            border-radius:8px;padding:7px 10px;color:var(--text);
+            font-family:inherit;font-size:13px;outline:none;
+          "/>
+          <input id="ms-equip-ciclo-kg" type="number" min="0" step="0.1" placeholder="kg por ciclo" style="
+            flex:1;background:var(--card);border:1px solid var(--border2);
+            border-radius:8px;padding:7px 10px;color:var(--text);
+            font-family:inherit;font-size:13px;outline:none;
+          " onkeydown="if(event.key==='Enter')addEquipamento()"/>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;" id="ms-equip-hint">
+          📌 Informe o nome e a capacidade em kg por hora do equipamento
+        </div>
         <div id="ms-equip-lista" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
         <div id="ms-equip-vazio" style="font-size:12px;color:var(--muted);text-align:center;padding:12px 0;">
           Nenhum equipamento cadastrado ainda.
@@ -790,6 +860,7 @@ const INITIAL = {
   ],
   demandas:[],
   reunioes:[],
+  receitas:[],
 };
 
 // ════════════════════════════════════════════════════════════════════
@@ -1197,13 +1268,24 @@ function openSetorModal(idOrNew){
 
 function addEquipamento(){
   const inp  = document.getElementById("ms-equip-input");
-  const kghI = document.getElementById("ms-equip-kgh");
   const nome = inp.value.trim();
   if(!nome) return inp.focus();
-  const kgh  = parseFloat(kghI.value)||0;
+  const tipo = document.getElementById("ms-equip-tipo").value;
+  let equip;
+  if(tipo==="ciclo"){
+    const cicloMin = parseFloat(document.getElementById("ms-equip-ciclo-min").value)||0;
+    const cicloKg  = parseFloat(document.getElementById("ms-equip-ciclo-kg").value)||0;
+    equip = {nome, tipo:"ciclo", kgh:0, cicloMin, cicloKg};
+  } else {
+    const kgh = parseFloat(document.getElementById("ms-equip-kgh").value)||0;
+    equip = {nome, tipo:"kgh", kgh, cicloMin:0, cicloKg:0};
+  }
   if(currentEquipamentos.find(e=>e.nome===nome)){ alert("Equipamento já cadastrado!"); return; }
-  currentEquipamentos.push({ nome, kgh });
-  inp.value = ""; kghI.value = "";
+  currentEquipamentos.push(equip);
+  inp.value="";
+  document.getElementById("ms-equip-kgh").value="";
+  document.getElementById("ms-equip-ciclo-min").value="";
+  document.getElementById("ms-equip-ciclo-kg").value="";
   renderEquipamentosModal();
   inp.focus();
 }
@@ -1224,34 +1306,46 @@ function renderEquipamentosModal(){
   vazio.style.display = "none";
   lista.innerHTML = currentEquipamentos.map((e,i)=>{
     const nome = typeof e==="string"?e:e.nome;
-    const kgh  = typeof e==="string"?0:e.kgh||0;
-    return `<div style="display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;">
-      <span style="font-size:14px">🔧</span>
-      <span style="flex:1;font-size:13px;font-weight:600">${escHtml(nome)}</span>
-      <div style="display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid ${kgh?'var(--accent2)':'var(--border2)'};border-radius:8px;padding:3px 8px;" title="Clique para editar kg/h">
-        <input
-          type="number" min="0" step="0.1"
-          value="${kgh||''}"
-          placeholder="kg/h"
-          onchange="updateEquipKgh(${i}, this.value)"
-          onfocus="this.select()"
-          style="width:52px;border:none;background:transparent;font-size:12px;font-weight:700;color:var(--accent2);outline:none;font-family:var(--font);text-align:right;"
-        />
-        <span style="font-size:10px;color:var(--muted)">kg/h</span>
+    const tipo = e.tipo||"kgh";
+    const isCiclo = tipo==="ciclo";
+    return `<div style="background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:${isCiclo?8:0}px;">
+        <span style="font-size:14px">🔧</span>
+        <span style="flex:1;font-size:13px;font-weight:600">${escHtml(nome)}</span>
+        <span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${isCiclo?"#1a0d2a":"#0d1a2a"};color:${isCiclo?"#a78bfa":"#60a5fa"};font-weight:700;">${isCiclo?"🔄 Ciclo":"⚖️ kg/h"}</span>
+        <button onclick="removeEquipamento('${escHtml(nome)}')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:11px;font-weight:700;padding:3px 8px;font-family:inherit;">✕</button>
       </div>
-      <button onclick="removeEquipamento('${escHtml(nome)}')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:11px;font-weight:700;padding:3px 8px;font-family:inherit;">✕</button>
+      ${isCiclo?`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div style="display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:4px 8px;">
+          <span style="font-size:10px;color:var(--muted);">⏱️ min/ciclo</span>
+          <input type="number" min="1" value="${e.cicloMin||""}" placeholder="min"
+            onchange="updateEquipField(${i},'cicloMin',this.value)"
+            style="flex:1;border:none;background:transparent;font-size:12px;font-weight:700;color:#a78bfa;outline:none;width:50px;text-align:right;" />
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:4px 8px;">
+          <span style="font-size:10px;color:var(--muted);">📦 kg/ciclo</span>
+          <input type="number" min="0" step="0.1" value="${e.cicloKg||""}" placeholder="kg"
+            onchange="updateEquipField(${i},'cicloKg',this.value)"
+            style="flex:1;border:none;background:transparent;font-size:12px;font-weight:700;color:#a78bfa;outline:none;width:50px;text-align:right;" />
+        </div>
+      </div>`:`
+      <div style="display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid ${e.kgh?"#60a5fa40":"var(--border2)"};border-radius:7px;padding:4px 10px;">
+        <input type="number" min="0" step="0.1" value="${e.kgh||""}" placeholder="kg/h"
+          onchange="updateEquipField(${i},'kgh',this.value)"
+          style="flex:1;border:none;background:transparent;font-size:12px;font-weight:700;color:#60a5fa;outline:none;text-align:right;" />
+        <span style="font-size:10px;color:var(--muted)">kg/h</span>
+      </div>`}
     </div>`;
   }).join("");
 }
 
-function updateEquipKgh(index, value){
-  const kgh = parseFloat(value)||0;
+function updateEquipField(index, field, value){
   if(currentEquipamentos[index]){
     const e = currentEquipamentos[index];
-    currentEquipamentos[index] = {
-      nome: typeof e==="string"?e:e.nome,
-      kgh
-    };
+    currentEquipamentos[index] = typeof e==="string"
+      ? {nome:e, tipo:"kgh", kgh:0, cicloMin:0, cicloKg:0, [field]:parseFloat(value)||0}
+      : {...e, [field]:parseFloat(value)||0};
   }
 }
 
@@ -1802,6 +1896,11 @@ Seja direto, profissional e use linguagem de negócios. Máximo 300 palavras.`;
 // banco de paradas diretas (fora de demandas)
 // cada parada: { id, setorId, equipNome, kgh, inicio, fim, obs, minutos }
 
+function getKgPerdidos(p){
+  if(p.kgPerdidos!=null) return p.kgPerdidos;
+  return p.kgh>0?(p.minutos/60*p.kgh):0;
+}
+
 function getTodasParadas(){
   // paradas das demandas
   const dParadas = [];
@@ -1828,24 +1927,165 @@ function getTodasParadas(){
   return [...dParadas, ...diretas].sort((a,b)=>b.inicio.localeCompare(a.inicio));
 }
 
+function onEquipTipoChange(){
+  const tipo = document.getElementById("ms-equip-tipo").value;
+  const kghW = document.getElementById("ms-equip-kgh-wrap");
+  const cicW = document.getElementById("ms-equip-ciclo-wrap");
+  const hint = document.getElementById("ms-equip-hint");
+  if(tipo==="ciclo"){
+    kghW.style.display="none";
+    cicW.style.display="flex";
+    hint.textContent="🔄 Informe a duração do ciclo (min) e quantos kg produz por ciclo";
+  } else {
+    kghW.style.display="flex";
+    cicW.style.display="none";
+    hint.textContent="📌 Informe o nome e a capacidade em kg por hora do equipamento";
+  }
+}
+
+function toggleReceitasPanel(){
+  const p = document.getElementById("receitas-panel");
+  const b = document.getElementById("btn-toggle-receitas");
+  const show = p.style.display==="none";
+  p.style.display = show?"block":"none";
+  b.textContent = show?"✕ Fechar":"+ Gerenciar Receitas";
+  if(show) renderReceitasLista();
+}
+
+function addReceita(){
+  const nome = document.getElementById("rec-nome").value.trim();
+  const tipo = document.getElementById("rec-tipo").value;
+  if(!nome) return alert("Informe o nome da receita.");
+  if(!DB.receitas) DB.receitas=[];
+  if(DB.receitas.find(r=>r.nome.toLowerCase()===nome.toLowerCase())) return alert("Já existe uma receita com esse nome.");
+  DB.receitas.push({id:uid(), nome, tipo});
+  save();
+  document.getElementById("rec-nome").value="";
+  renderReceitasLista();
+  renderReceitasResumo();
+  atualizarNpReceitas();
+}
+
+function deleteReceita(id){
+  if(!confirm("Remover esta receita?")) return;
+  DB.receitas = (DB.receitas||[]).filter(r=>r.id!==id);
+  save();
+  renderReceitasLista();
+  renderReceitasResumo();
+  atualizarNpReceitas();
+}
+
+function renderReceitasLista(){
+  const el = document.getElementById("receitas-lista");
+  if(!el) return;
+  const lista = DB.receitas||[];
+  if(!lista.length){ el.innerHTML=`<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">Nenhuma receita cadastrada ainda.</div>`; return; }
+  el.innerHTML = lista.map(r=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;">
+      <span style="font-size:12px;">🍳</span>
+      <span style="flex:1;font-size:12px;font-weight:600;">${escHtml(r.nome)}</span>
+      <span style="font-size:10px;padding:1px 7px;border-radius:20px;background:${r.tipo==="ciclo"?"#1a0d2a":"#0d1a2a"};color:${r.tipo==="ciclo"?"#a78bfa":"#60a5fa"};font-weight:700;">${r.tipo==="ciclo"?"🔄 Ciclo":"⚖️ kg/h"}</span>
+      <button onclick="deleteReceita('${r.id}')" style="cursor:pointer;border:none;border-radius:5px;background:#2a0f0f;color:#f87171;font-size:10px;font-weight:700;padding:2px 7px;font-family:inherit;">✕</button>
+    </div>`).join("");
+}
+
+function renderReceitasResumo(){
+  const el = document.getElementById("receitas-resumo");
+  if(!el) return;
+  const lista = DB.receitas||[];
+  if(!lista.length){ el.innerHTML=`<span style="font-size:11px;color:var(--muted);">Nenhuma receita — clique em "Gerenciar" para adicionar</span>`; return; }
+  el.innerHTML = lista.map(r=>`
+    <span style="font-size:10px;padding:2px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--border2);color:var(--text);">
+      🍳 ${escHtml(r.nome)} <span style="color:${r.tipo==="ciclo"?"#a78bfa":"#60a5fa"}">${r.tipo==="ciclo"?"ciclo":"kg/h"}</span>
+    </span>`).join("");
+}
+
 function onNpSetorChange(){
   const setorId = document.getElementById("np-setor").value;
   const setor = DB.setores.find(s=>s.id===setorId);
   const sel = document.getElementById("np-equipamento");
-  const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,kgh:0}:e);
+  const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,tipo:"kgh",kgh:0}:e);
   sel.innerHTML = equips.length
-    ? `<option value="">Selecione...</option>` + equips.map(e=>`<option value="${escHtml(e.nome)}" data-kgh="${e.kgh}">${escHtml(e.nome)}${e.kgh?` — ${e.kgh} kg/h`:""}</option>`).join("")
+    ? `<option value="">Selecione...</option>` + equips.map(e=>{
+        const label = e.tipo==="ciclo"
+          ? `${e.nome} — 🔄 ${e.cicloMin||"?"}min / ${e.cicloKg||"?"}kg`
+          : `${e.nome}${e.kgh?` — ${e.kgh} kg/h`:""}`;
+        return `<option value="${escHtml(e.nome)}" data-tipo="${e.tipo||'kgh'}" data-kgh="${e.kgh||0}" data-ciclo-min="${e.cicloMin||0}" data-ciclo-kg="${e.cicloKg||0}">${escHtml(label)}</option>`;
+      }).join("")
     : `<option value="">Nenhum equipamento</option>`;
+  // atualiza receitas
+  atualizarNpReceitas();
+  onNpEquipChange();
+}
+
+function onNpEquipChange(){
+  const sel = document.getElementById("np-equipamento");
+  const opt = sel.options[sel.selectedIndex];
+  const tipo = opt?.dataset?.tipo||"kgh";
+  // mostra área de receita
+  document.getElementById("np-receita-area").style.display = sel.value?"grid":"none";
+  // define tipo padrão do equipamento
+  setNpTipo(tipo, true);
+}
+
+let npTipoAtual = "kgh";
+function setNpTipo(tipo, auto=false){
+  npTipoAtual = tipo;
+  const btnKgh  = document.getElementById("np-tipo-kgh");
+  const btnCiclo= document.getElementById("np-tipo-ciclo");
+  const sel = document.getElementById("np-equipamento");
+  const opt = sel?.options[sel?.selectedIndex];
+  const cicloMin = parseFloat(opt?.dataset?.cicloMin||0)||0;
+  const cicloKg  = parseFloat(opt?.dataset?.cicloKg||0)||0;
+
+  if(btnKgh)  { btnKgh.style.borderColor  = tipo==="kgh" ?"#f97316":"#f9731640"; btnKgh.style.color  = tipo==="kgh" ?"#f97316":"var(--muted)"; }
+  if(btnCiclo){ btnCiclo.style.borderColor= tipo==="ciclo"?"#a78bfa":"#f9731640"; btnCiclo.style.color= tipo==="ciclo"?"#a78bfa":"var(--muted)"; }
+
+  const manualArea = document.getElementById("np-ciclo-manual-area");
+  if(tipo==="ciclo"){
+    // se o equipamento já tem ciclo cadastrado, não mostra manual
+    if(cicloMin>0 && cicloKg>0){
+      manualArea.style.display="none";
+      manualArea.querySelector("#np-ciclo-min").value=cicloMin;
+      manualArea.querySelector("#np-ciclo-kg").value=cicloKg;
+    } else {
+      manualArea.style.display="block";
+      if(!auto){ document.getElementById("np-ciclo-min").value=""; document.getElementById("np-ciclo-kg").value=""; }
+    }
+  } else {
+    manualArea.style.display="none";
+  }
+}
+
+function atualizarNpReceitas(){
+  const sel = document.getElementById("np-receita");
+  if(!sel) return;
+  const receitas = DB.receitas||[];
+  sel.innerHTML = `<option value="">— Nenhuma / não informar —</option>`
+    + receitas.map(r=>`<option value="${escHtml(r.id)}">${escHtml(r.nome)}</option>`).join("");
+}
+
+function onNpReceitaChange(){
+  const receitaId = document.getElementById("np-receita").value;
+  if(!receitaId) return;
+  const receita = (DB.receitas||[]).find(r=>r.id===receitaId);
+  if(receita?.tipo) setNpTipo(receita.tipo);
 }
 
 function registrarParadaDireta(){
   const setorId  = document.getElementById("np-setor").value;
   const equipSel = document.getElementById("np-equipamento");
   const equipNome= equipSel.value;
-  const kgh      = parseFloat(equipSel.options[equipSel.selectedIndex]?.dataset?.kgh||0)||0;
+  const opt      = equipSel.options[equipSel.selectedIndex];
+  const equipTipo= opt?.dataset?.tipo||"kgh";
+  const kgh      = parseFloat(opt?.dataset?.kgh||0)||0;
+  const equipCicloMin = parseFloat(opt?.dataset?.cicloMin||0)||0;
+  const equipCicloKg  = parseFloat(opt?.dataset?.cicloKg||0)||0;
   const inicio   = document.getElementById("np-inicio").value;
   const fim      = document.getElementById("np-fim").value;
   const obs      = document.getElementById("np-obs").value.trim();
+  const receitaId= document.getElementById("np-receita")?.value||"";
+  const receita  = (DB.receitas||[]).find(r=>r.id===receitaId);
 
   if(!setorId)   return alert("Selecione o setor.");
   if(!equipNome) return alert("Selecione o equipamento.");
@@ -1856,15 +2096,44 @@ function registrarParadaDireta(){
   const setor = DB.setores.find(s=>s.id===setorId);
   const min = Math.round((f-ini)/60000);
 
+  // calcula kg perdidos
+  let kgPerdidos = 0;
+  let cicloMinFinal = 0, cicloKgFinal = 0;
+  const tipoFinal = npTipoAtual;
+
+  if(tipoFinal==="ciclo"){
+    cicloMinFinal = equipCicloMin || parseFloat(document.getElementById("np-ciclo-min")?.value||0)||0;
+    cicloKgFinal  = equipCicloKg  || parseFloat(document.getElementById("np-ciclo-kg")?.value||0)||0;
+    if(cicloMinFinal>0 && cicloKgFinal>0){
+      const ciclos = Math.floor(min / cicloMinFinal);
+      kgPerdidos = ciclos * cicloKgFinal;
+    }
+  } else {
+    kgPerdidos = kgh>0 ? (min/60)*kgh : 0;
+  }
+
   if(!DB.paradasDiretas) DB.paradasDiretas=[];
   DB.paradasDiretas.push({
     id: uid(), setorId, setorNome: setor?.nome||"",
-    equipNome, kgh, inicio, fim, obs, minutos: min, fonte:"direta"
+    equipNome, tipo: tipoFinal, kgh,
+    cicloMin: cicloMinFinal, cicloKg: cicloKgFinal,
+    receitaId, receitaNome: receita?.nome||"",
+    inicio, fim, obs, minutos: min, kgPerdidos,
+    fonte:"direta"
   });
   save();
   document.getElementById("np-obs").value="";
+  document.getElementById("np-receita").value="";
   renderParadasView();
-  alert(`✅ Parada registrada! ${fmtDuracao2(min)}${kgh>0?` — ${((min/60)*kgh).toFixed(1)} kg perdidos`:""}`);
+
+  let msg = `✅ Parada registrada! ${fmtDuracao2(min)}`;
+  if(tipoFinal==="ciclo" && cicloMinFinal>0 && cicloKgFinal>0){
+    const ciclos = Math.floor(min/cicloMinFinal);
+    msg += ` — ${ciclos} ciclo(s) perdido(s) = ${kgPerdidos.toFixed(1)} kg`;
+  } else if(kgPerdidos>0){
+    msg += ` — ${kgPerdidos.toFixed(1)} kg perdidos`;
+  }
+  alert(msg);
 }
 
 function fmtDuracao2(min){
@@ -1883,6 +2152,8 @@ function fmtDateTime(iso){
 
 function renderParadasView(){
   if(currentView!=="paradas") return;
+  renderReceitasResumo();
+  atualizarNpReceitas();
   const fSetor=document.getElementById("pd-setor-filtro");
   const fEquip=document.getElementById("pd-equip-filtro");
   const fData=document.getElementById("pd-data-filtro");
@@ -1910,13 +2181,13 @@ function renderParadasView(){
 
   const paradaDia=todas.filter(p=>p.inicio.slice(0,10)===dataResumo);
   const minDia=paradaDia.reduce((a,p)=>a+p.minutos,0);
-  const kgDia=paradaDia.filter(p=>p.kgh>0).reduce((a,p)=>a+(p.minutos/60*p.kgh),0);
+  const kgDia=paradaDia.reduce((a,p)=>a+getKgPerdidos(p),0);
   const pde={};
   paradaDia.forEach(p=>{
     const k=p.equipNome||"Sem equipamento";
     if(!pde[k]) pde[k]={nome:k,min:0,kg:0,n:0,kgh:p.kgh};
     pde[k].min+=p.minutos; pde[k].n++;
-    if(p.kgh>0) pde[k].kg+=p.minutos/60*p.kgh;
+    pde[k].kg+=getKgPerdidos(p);
   });
   const edr=Object.values(pde).sort((a,b)=>b.kg-a.kg);
 
@@ -1959,9 +2230,9 @@ function renderParadasView(){
 
   const totalMin=paradasFiltradas.reduce((a,p)=>a+p.minutos,0);
   const hoje7=new Date(hoje); hoje7.setDate(hoje7.getDate()-6);
-  const sKg=todas.filter(p=>new Date(p.inicio)>=hoje7&&p.kgh>0).reduce((a,p)=>a+(p.minutos/60*p.kgh),0);
+  const sKg=todas.filter(p=>new Date(p.inicio)>=hoje7).reduce((a,p)=>a+getKgPerdidos(p),0);
   const mIni=new Date(hoje.getFullYear(),hoje.getMonth(),1);
-  const mKg=todas.filter(p=>new Date(p.inicio)>=mIni&&p.kgh>0).reduce((a,p)=>a+(p.minutos/60*p.kgh),0);
+  const mKg=todas.filter(p=>new Date(p.inicio)>=mIni).reduce((a,p)=>a+getKgPerdidos(p),0);
   const lbl=curFData?'Para '+dataLabel:'Todos os periodos';
 
   document.getElementById("pd-kpis").innerHTML=
@@ -1983,7 +2254,7 @@ function renderParadasView(){
     const k=p.equipNome||"Sem equipamento";
     if(!pe[k]) pe[k]={nome:k,kgh:p.kgh,paradas:0,minutos:0,kg:0};
     pe[k].paradas++; pe[k].minutos+=p.minutos;
-    if(p.kgh>0) pe[k].kg+=p.minutos/60*p.kgh;
+    pe[k].kg+=getKgPerdidos(p);
   });
   const er=Object.values(pe).sort((a,b)=>b.kg-a.kg||b.minutos-a.minutos);
   document.getElementById("pd-por-equipamento").innerHTML=!er.length
@@ -2010,7 +2281,7 @@ function renderParadasView(){
           +'<span style="font-weight:600">&#9881; '+escHtml(p.equipNome||'--')+'<br><span style="font-size:10px;color:var(--muted)">'+escHtml(p.setorNome||'')+'</span></span>'
           +'<span style="text-align:right;color:#f59e0b">'+fmtDuracao2(p.minutos)+'</span>'
           +'<span style="text-align:right;font-weight:700;color:'+(kg?'#ef4444':'var(--muted)')+';">'+(kg?'-'+kg+' kg':'--')+'</span>'
-          +'<span style="font-size:11px;color:var(--muted)">'+escHtml(p.obs||'--')+(p.fonte==="demanda"?'<br><span style="color:var(--sky)">&#128203; '+escHtml(p.demandaTitulo||'')+'</span>':'')+'</span>'
+          +'<span style="font-size:11px;color:var(--muted)">'+escHtml(p.obs||'--')+(p.receitaNome?'<br><span style="color:#a78bfa;">🍳 '+escHtml(p.receitaNome)+(p.tipo==="ciclo"?' — 🔄 ciclo':'')+'</span>':'')+(p.fonte==="demanda"?'<br><span style="color:var(--sky)">&#128203; '+escHtml(p.demandaTitulo||'')+'</span>':'')+'</span>'
           +(p.fonte==="direta"?'<button onclick="deletarParadaDireta(\''+p.id+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 7px;font-family:inherit;">X</button>':'<span></span>')
           +'</div>';
       }).join("");
@@ -2143,6 +2414,7 @@ function importBackup(event){
         setores:  dados.setores  || [],
         demandas: dados.demandas || [],
         reunioes: dados.reunioes || [],
+        receitas: dados.receitas || [],
       };
       save();
       render();
