@@ -2545,16 +2545,28 @@ function renderParadasView(){
   listaEl.previousElementSibling.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">'+titulo+' ('+paradasFiltradas.length+')</div>';
   listaEl.innerHTML=!paradasFiltradas.length
     ?'<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">Nenhuma parada no periodo.</div>'
-    :'<div class="parada-reg parada-reg-head"><span>Data/Hora</span><span>Equipamento</span><span style="text-align:right">Duracao</span><span style="text-align:right">Kg perdidos</span><span>Observacao</span><span></span></div>'
+    :'<div class="parada-reg parada-reg-head"><span>Data/Hora</span><span>Equipamento</span><span style="text-align:right">Duração</span><span style="text-align:right">Kg perdidos</span><span>Receita / Obs</span><span></span></div>'
       +paradasFiltradas.map(p=>{
-        const kg=p.kgh>0?(p.minutos/60*p.kgh).toFixed(1):null;
+        const kg = getKgPerdidos(p);
+        // detalhe do cálculo para transparência
+        let calcDetalhe = "";
+        if(p.tipo==="ciclo" && p.cicloMin>0 && p.cicloKg>0){
+          const ciclos = Math.floor(p.minutos/p.cicloMin);
+          calcDetalhe = `<span style="font-size:9px;color:#a78bfa;display:block;">🔄 ${ciclos} ciclo(s) × ${p.cicloKg}kg</span>`;
+        } else if(p.kgh>0){
+          calcDetalhe = `<span style="font-size:9px;color:var(--muted);display:block;">${(p.minutos/60).toFixed(1)}h × ${p.kgh}kg/h</span>`;
+        }
         return '<div class="parada-reg">'
-          +'<span style="font-size:11px;color:var(--muted)">'+fmtDateTime(p.inicio)+'<br>-&gt; '+fmtDateTime(p.fim)+'</span>'
-          +'<span style="font-weight:600">&#9881; '+escHtml(p.equipNome||'--')+'<br><span style="font-size:10px;color:var(--muted)">'+escHtml(p.setorNome||'')+'</span></span>'
+          +'<span style="font-size:11px;color:var(--muted)">'+fmtDateTime(p.inicio)+'<br>→ '+fmtDateTime(p.fim)+'</span>'
+          +'<span style="font-weight:600">⚙️ '+escHtml(p.equipNome||'--')+'<br><span style="font-size:10px;color:var(--muted)">'+escHtml(p.setorNome||'')+'</span></span>'
           +'<span style="text-align:right;color:#f59e0b">'+fmtDuracao2(p.minutos)+'</span>'
-          +'<span style="text-align:right;font-weight:700;color:'+(kg?'#ef4444':'var(--muted)')+';">'+(kg?'-'+kg+' kg':'--')+'</span>'
-          +'<span style="font-size:11px;color:var(--muted)">'+escHtml(p.obs||'--')+(p.receitaNome?'<br><span style="color:#a78bfa;">🍳 '+escHtml(p.receitaNome)+(p.tipo==="ciclo"?' — 🔄 ciclo':'')+'</span>':'')+(p.fonte==="demanda"?'<br><span style="color:var(--sky)">&#128203; '+escHtml(p.demandaTitulo||'')+'</span>':'')+'</span>'
-          +(p.fonte==="direta"?'<button onclick="deletarParadaDireta(\''+p.id+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 7px;font-family:inherit;">X</button>':'<span></span>')
+          +'<span style="text-align:right;font-weight:700;color:'+(kg>0?'#ef4444':'var(--muted)')+';">'+(kg>0?'-'+kg.toFixed(1)+' kg':'--')+calcDetalhe+'</span>'
+          +'<span style="font-size:11px;color:var(--muted)">'
+            +escHtml(p.obs||'')
+            +(p.receitaNome?'<br><span style="color:#a78bfa;">🍳 '+escHtml(p.receitaNome)+'</span>':'')
+            +(p.fonte==="demanda"?'<br><span style="color:var(--sky)">📋 '+escHtml(p.demandaTitulo||'')+'</span>':'')
+          +'</span>'
+          +(p.fonte==="direta"?'<button onclick="deletarParadaDireta(\''+p.id+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 7px;font-family:inherit;">✕</button>':'<span></span>')
           +'</div>';
       }).join("");
 }
