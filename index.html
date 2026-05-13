@@ -793,7 +793,30 @@
           <div class="field"><label>Data</label><input type="date" id="ma-data" onchange="saveDraft()"/></div>
           <div class="field"><label>Local / Plataforma</label><input id="ma-local" placeholder="Sala, Teams, Zoom..." oninput="saveDraft()"/></div>
           <div class="field span2"><label>Participantes (separe por vírgula)</label><input id="ma-participantes" placeholder="Cleison, Maria, João..." oninput="saveDraft()"/></div>
-          <div class="field span2"><label>Pauta / Resumo Geral</label><textarea id="ma-pauta" rows="4" placeholder="Decisões tomadas, contexto geral..." oninput="saveDraft()"></textarea></div>
+          <div class="field span2">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <label style="margin:0;">Pauta / Resumo Geral</label>
+              <button type="button" onclick="abrirPautaModal()" style="padding:2px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--sky);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ Expandir</button>
+            </div>
+            <textarea id="ma-pauta" rows="4" placeholder="Decisões tomadas, contexto geral..." oninput="saveDraft()"></textarea>
+          </div>
+
+          <!-- MODAL PAUTA EXPANDIDA -->
+          <div id="modal-pauta-exp" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+            <div style="width:100%;max-width:800px;height:85vh;background:#1a1f2e;border-radius:16px;border:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.7);">
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;background:#0f1420;border-bottom:1px solid var(--border2);">
+                <span style="font-size:16px;">📝</span>
+                <span style="font-size:13px;font-weight:700;color:var(--text);flex:1;">Pauta / Resumo Geral</span>
+                <button type="button" onclick="fecharPautaModal()" style="padding:5px 16px;border-radius:8px;border:none;background:var(--accent);color:#0b0f1a;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✓ Fechar</button>
+              </div>
+              <textarea id="ma-pauta-big" placeholder="Decisões tomadas, contexto geral..."
+                style="flex:1;background:#1a1f2e;border:none;outline:none;padding:20px;color:var(--text);font-family:inherit;font-size:14px;line-height:1.9;resize:none;"></textarea>
+              <div style="padding:8px 18px;background:#0f1420;border-top:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center;">
+                <span id="pauta-exp-chars" style="font-size:10px;color:var(--muted);">0 caracteres</span>
+                <button type="button" onclick="fecharPautaModal()" style="padding:6px 20px;border-radius:8px;border:none;background:var(--accent);color:#0b0f1a;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✓ Salvar e fechar</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <!-- TAREFAS -->
@@ -1945,6 +1968,32 @@ function onEquipTipoChange(){
   }
 }
 
+
+function abrirPautaModal(){
+  const mini = document.getElementById("ma-pauta");
+  const big  = document.getElementById("ma-pauta-big");
+  const ovl  = document.getElementById("modal-pauta-exp");
+  if(!ovl||!big) return;
+  big.value = mini.value||"";
+  const chars = document.getElementById("pauta-exp-chars");
+  if(chars) chars.textContent = big.value.length+" caractere"+(big.value.length!==1?"s":"");
+  big.oninput = function(){
+    mini.value = big.value;
+    if(chars) chars.textContent = big.value.length+" caractere"+(big.value.length!==1?"s":"");
+    saveDraft();
+  };
+  ovl.style.display = "flex";
+  setTimeout(()=>big.focus(),50);
+}
+
+function fecharPautaModal(){
+  const big = document.getElementById("ma-pauta-big");
+  const mini= document.getElementById("ma-pauta");
+  const ovl = document.getElementById("modal-pauta-exp");
+  if(big&&mini) mini.value = big.value;
+  if(ovl) ovl.style.display = "none";
+  saveDraft();
+}
 
 function toggleReceitasPanel(){
   const p = document.getElementById("receitas-panel");
