@@ -2108,8 +2108,17 @@ async function enviarSlack(ataId){
 // cada parada: { id, setorId, equipNome, kgh, inicio, fim, obs, minutos }
 
 function getKgPerdidos(p){
-  if(p.kgPerdidos!=null) return p.kgPerdidos;
-  return p.kgh>0?(p.minutos/60*p.kgh):0;
+  // Se for ciclo e tiver os dados necessários, recalcula sempre
+  if(p.tipo==="ciclo" && p.cicloMin>0 && p.cicloKg>0){
+    const ciclos = Math.floor(p.minutos / p.cicloMin);
+    return ciclos * p.cicloKg;
+  }
+  // Se tiver kgPerdidos salvo e for ciclo sem dados de ciclo, usa o salvo
+  if(p.kgPerdidos!=null && p.tipo==="ciclo") return p.kgPerdidos;
+  // kg/h
+  if(p.kgh>0) return (p.minutos/60)*p.kgh;
+  // parada de demanda sem dados de kg — retorna 0
+  return 0;
 }
 
 function getTodasParadas(){
@@ -2566,7 +2575,10 @@ function renderParadasView(){
             +(p.receitaNome?'<br><span style="color:#a78bfa;">🍳 '+escHtml(p.receitaNome)+'</span>':'')
             +(p.fonte==="demanda"?'<br><span style="color:var(--sky)">📋 '+escHtml(p.demandaTitulo||'')+'</span>':'')
           +'</span>'
-          +(p.fonte==="direta"?'<button onclick="deletarParadaDireta(\''+p.id+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 7px;font-family:inherit;">✕</button>':'<span></span>')
+          +'<div style="display:flex;gap:4px;align-items:center;">'
+          +'<button onclick="abrirEditParada(\''+p.id+'\',\''+p.fonte+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#1a2a3d;color:#60a5fa;font-size:10px;padding:3px 8px;font-family:inherit;" title="Editar">✏️</button>'
+          +'<button onclick="deletarParada(\''+p.id+'\',\''+p.fonte+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 8px;font-family:inherit;" title="Excluir">✕</button>'
+          +'</div>'
           +'</div>';
       }).join("");
 }
@@ -2652,10 +2664,167 @@ function irParaAmanha(){
   renderParadasView();
 }
 
-function deletarParadaDireta(id){
-  if(!confirm("Remover esta parada?")) return;
-  DB.paradasDiretas = (DB.paradasDiretas||[]).filter(p=>p.id!==id);
+function deletarParada(id, fonte){
+  if(!confirm("Remover esta parada permanentemente?")) return;
+  if(fonte==="demanda"){
+    // remove de dentro da demanda
+    DB.demandas = DB.demandas.map(d=>{
+      if(!d.paradas?.length) return d;
+      return {...d, paradas: d.paradas.filter(p=>p.id!==id)};
+    });
+  } else {
+    DB.paradasDiretas = (DB.paradasDiretas||[]).filter(p=>p.id!==id);
+  }
   save(); renderParadasView();
+}
+
+// alias para compatibilidade
+function deletarParadaDireta(id){ deletarParada(id,"direta"); }
+
+let editingParadaId = null;
+let editingParadaFonte = null;
+
+function abrirEditParada(id, fonte){
+  // busca a parada
+  let p = null;
+  if(fonte==="demanda"){
+    for(const d of DB.demandas){
+      const found = (d.paradas||[]).find(x=>x.id===id);
+      if(found){ p = {...found, setorId:d.setorId, equipNome:d.equipamento, setorNome: (DB.setores.find(s=>s.id===d.setorId)?.nome||"")}; break; }
+    }
+  } else {
+    p = (DB.paradasDiretas||[]).find(x=>x.id===id);
+  }
+  if(!p) return alert("Parada não encontrada.");
+
+  editingParadaId = id;
+  editingParadaFonte = fonte;
+
+  // preenche campos
+  document.getElementById("ep-inicio").value = p.inicio?.slice(0,16)||"";
+  document.getElementById("ep-fim").value    = p.fim?.slice(0,16)||"";
+  document.getElementById("ep-obs").value    = p.obs||"";
+
+  // receitas
+  const recSel = document.getElementById("ep-receita");
+  const receitas = DB.receitas||[];
+  recSel.innerHTML = '<option value="">— Nenhuma —</option>'
+    + receitas.map(r=>`<option value="${r.id}" ${r.id===p.receitaId?'selected':''}>${escHtml(r.nome)}</option>`).join("");
+
+  // tipo
+  const tipo = p.tipo||"kgh";
+  setEpTipo(tipo);
+  document.getElementById("ep-ciclo-min").value = p.cicloMin||"";
+  document.getElementById("ep-ciclo-kg").value  = p.cicloKg||"";
+  document.getElementById("ep-kgh").value       = p.kgh||"";
+
+  atualizarEpPreview();
+  document.getElementById("modal-edit-parada").style.display="flex";
+}
+
+function fecharEditParada(){
+  document.getElementById("modal-edit-parada").style.display="none";
+  editingParadaId = null; editingParadaFonte = null;
+}
+
+function setEpTipo(tipo){
+  const cicloArea = document.getElementById("ep-ciclo-area");
+  const kghArea   = document.getElementById("ep-kgh-area");
+  const btnKgh    = document.getElementById("ep-tipo-kgh");
+  const btnCiclo  = document.getElementById("ep-tipo-ciclo");
+  cicloArea.style.display = tipo==="ciclo"?"block":"none";
+  kghArea.style.display   = tipo==="kgh"?"block":"none";
+  btnKgh.style.borderColor   = tipo==="kgh"?"#60a5fa":"var(--border2)";
+  btnKgh.style.color         = tipo==="kgh"?"#60a5fa":"var(--muted)";
+  btnCiclo.style.borderColor = tipo==="ciclo"?"#a78bfa":"var(--border2)";
+  btnCiclo.style.color       = tipo==="ciclo"?"#a78bfa":"var(--muted)";
+  btnKgh.dataset.tipo="kgh"; btnCiclo.dataset.tipo="ciclo";
+  atualizarEpPreview();
+}
+
+function onEpReceitaChange(){
+  const receitaId = document.getElementById("ep-receita").value;
+  if(!receitaId){ atualizarEpPreview(); return; }
+  const receita = (DB.receitas||[]).find(r=>r.id===receitaId);
+  if(!receita){ atualizarEpPreview(); return; }
+  if(receita.cicloMin) document.getElementById("ep-ciclo-min").value = receita.cicloMin;
+  if(receita.cicloKg)  document.getElementById("ep-ciclo-kg").value  = receita.cicloKg;
+  setEpTipo("ciclo");
+  atualizarEpPreview();
+}
+
+function atualizarEpPreview(){
+  const inicio = document.getElementById("ep-inicio").value;
+  const fim    = document.getElementById("ep-fim").value;
+  const prev   = document.getElementById("ep-preview");
+  if(!prev) return;
+  if(!inicio||!fim){ prev.textContent="Preencha início e fim para ver o cálculo."; return; }
+  const ini = new Date(inicio), f = new Date(fim);
+  if(f<=ini){ prev.textContent="⚠️ Fim deve ser depois do início."; return; }
+  const min = Math.round((f-ini)/60000);
+  const tipo = document.getElementById("ep-tipo-ciclo").style.color==="#a78bfa"?"ciclo":"kgh";
+  let txt = `⏱️ Duração: ${fmtDuracao2(min)}`;
+  if(tipo==="ciclo"){
+    const cicloMin = parseFloat(document.getElementById("ep-ciclo-min").value)||0;
+    const cicloKg  = parseFloat(document.getElementById("ep-ciclo-kg").value)||0;
+    if(cicloMin>0&&cicloKg>0){
+      const ciclos = Math.floor(min/cicloMin);
+      txt += ` → 🔄 ${ciclos} ciclo(s) × ${cicloKg}kg = 📦 ${(ciclos*cicloKg).toFixed(1)} kg perdidos`;
+    }
+  } else {
+    const kgh = parseFloat(document.getElementById("ep-kgh").value)||0;
+    if(kgh>0) txt += ` → 📦 ${((min/60)*kgh).toFixed(1)} kg perdidos`;
+  }
+  prev.textContent = txt;
+}
+
+// Adiciona listeners para atualizar preview em tempo real
+setTimeout(()=>{
+  ["ep-inicio","ep-fim","ep-ciclo-min","ep-ciclo-kg","ep-kgh"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener("input", atualizarEpPreview);
+  });
+},500);
+
+function salvarEditParada(){
+  const inicio = document.getElementById("ep-inicio").value;
+  const fim    = document.getElementById("ep-fim").value;
+  const obs    = document.getElementById("ep-obs").value.trim();
+  const receitaId = document.getElementById("ep-receita").value;
+  const receita = (DB.receitas||[]).find(r=>r.id===receitaId);
+
+  if(!inicio||!fim) return alert("Preencha início e fim.");
+  const ini = new Date(inicio), f = new Date(fim);
+  if(f<=ini) return alert("Fim deve ser depois do início.");
+  const min = Math.round((f-ini)/60000);
+
+  const tipo = document.getElementById("ep-tipo-ciclo").style.color==="#a78bfa"?"ciclo":"kgh";
+  const cicloMin = parseFloat(document.getElementById("ep-ciclo-min").value)||0;
+  const cicloKg  = parseFloat(document.getElementById("ep-ciclo-kg").value)||0;
+  const kgh      = parseFloat(document.getElementById("ep-kgh").value)||0;
+
+  let kgPerdidos = 0;
+  if(tipo==="ciclo" && cicloMin>0 && cicloKg>0){
+    kgPerdidos = Math.floor(min/cicloMin)*cicloKg;
+  } else if(kgh>0){
+    kgPerdidos = (min/60)*kgh;
+  }
+
+  if(editingParadaFonte==="demanda"){
+    DB.demandas = DB.demandas.map(d=>{
+      if(!d.paradas?.find(p=>p.id===editingParadaId)) return d;
+      return {...d, paradas: d.paradas.map(p=>p.id!==editingParadaId?p:{
+        ...p, inicio, fim, obs, tipo, cicloMin, cicloKg, kgh,
+        receitaId, receitaNome:receita?.nome||"", kgPerdidos, minutos:min
+      })};
+    });
+  } else {
+    DB.paradasDiretas = (DB.paradasDiretas||[]).map(p=>p.id!==editingParadaId?p:{
+      ...p, inicio, fim, obs, tipo, cicloMin, cicloKg, kgh,
+      receitaId, receitaNome:receita?.nome||"", kgPerdidos, minutos:min
+    });
+  }
+  save(); fecharEditParada(); renderParadasView();
 }
 
 function setFiltroHoje(){
@@ -3024,5 +3193,67 @@ updateApiKeyBtn();
   if(fim) fim.value = iso;
 })();
 </script>
+<!-- MODAL EDITAR PARADA -->
+<div id="modal-edit-parada" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)fecharEditParada()">
+  <div style="background:var(--card);border-radius:16px;padding:0;width:100%;max-width:560px;border:1px solid var(--border2);box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:#1a0d00;border-bottom:1px solid #f9731640;">
+      <span style="font-size:16px;">✏️</span>
+      <span style="font-size:14px;font-weight:700;color:#f97316;flex:1;">Editar Parada</span>
+      <button onclick="fecharEditParada()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 4px;">×</button>
+    </div>
+    <div style="padding:18px;display:flex;flex-direction:column;gap:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field">
+          <label>Início da Parada</label>
+          <input type="datetime-local" id="ep-inicio" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;"/>
+        </div>
+        <div class="field">
+          <label>Fim da Parada</label>
+          <input type="datetime-local" id="ep-fim" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>🍳 Receita</label>
+        <select id="ep-receita" onchange="onEpReceitaChange()" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;">
+          <option value="">— Nenhuma —</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button id="ep-tipo-kgh" onclick="setEpTipo('kgh')" class="btn btn-ghost" style="flex:1;font-size:11px;padding:6px;">⚖️ kg/h</button>
+        <button id="ep-tipo-ciclo" onclick="setEpTipo('ciclo')" class="btn btn-ghost" style="flex:1;font-size:11px;padding:6px;">🔄 Ciclo</button>
+      </div>
+      <div id="ep-ciclo-area" style="display:none;background:var(--bg);border:1px solid #a78bfa40;border-radius:8px;padding:10px;">
+        <div style="font-size:11px;color:#a78bfa;font-weight:700;margin-bottom:8px;">🔄 Dados do Ciclo</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="field">
+            <label>Duração do ciclo (min)</label>
+            <input type="number" id="ep-ciclo-min" min="1" placeholder="Ex: 90" style="width:100%;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+          </div>
+          <div class="field">
+            <label>kg por ciclo</label>
+            <input type="number" id="ep-ciclo-kg" min="0" step="0.01" placeholder="Ex: 136" style="width:100%;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+          </div>
+        </div>
+      </div>
+      <div id="ep-kgh-area" style="display:none;background:var(--bg);border:1px solid #60a5fa40;border-radius:8px;padding:10px;">
+        <div class="field">
+          <label>⚖️ Capacidade (kg/h)</label>
+          <input type="number" id="ep-kgh" min="0" step="0.1" placeholder="Ex: 50" style="width:100%;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Observação</label>
+        <input type="text" id="ep-obs" placeholder="Motivo da parada..." style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+      </div>
+      <!-- preview do cálculo -->
+      <div id="ep-preview" style="background:#1a0d00;border:1px solid #f9731640;border-radius:8px;padding:10px;font-size:12px;color:#f97316;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="fecharEditParada()" class="btn btn-secondary">Cancelar</button>
+        <button onclick="salvarEditParada()" class="btn btn-primary" style="background:#f97316;border-color:#f97316;">💾 Salvar alterações</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
