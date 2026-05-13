@@ -2380,7 +2380,9 @@ function renderParadasView(){
     +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">'
     +'<span style="font-size:14px;font-weight:700;color:#f97316;">&#128203; Resumo do Dia &mdash; '+dataLabel+'</span>'
     +(dataResumo===hojeStr?'<span style="background:#f9731620;color:#f97316;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid #f9731640">HOJE</span>':'')
-    +'<div class="flex1"></div>'+navHtml+'</div>'+rBody+'</div>';
+    +'<div class="flex1"></div>'
+    +(paradaDia.length?'<button onclick="enviarResumoWa(\''+dataResumo+'\')" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:none;background:#25d366;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">📲 Enviar no WhatsApp</button>':'')
+    +navHtml+'</div>'+rBody+'</div>';
 
   const totalMin=paradasFiltradas.reduce((a,p)=>a+p.minutos,0);
   const hoje7=new Date(hoje); hoje7.setDate(hoje7.getDate()-6);
@@ -2439,6 +2441,68 @@ function renderParadasView(){
           +(p.fonte==="direta"?'<button onclick="deletarParadaDireta(\''+p.id+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 7px;font-family:inherit;">X</button>':'<span></span>')
           +'</div>';
       }).join("");
+}
+
+function enviarResumoWa(dataStr){
+  const pts=dataStr.split("-");
+  const dataLabel=pts[2]+"/"+pts[1]+"/"+pts[0];
+
+  // paradas do dia
+  const todasP=getTodasParadas();
+  const paradaDia=todasP.filter(p=>p.inicio.slice(0,10)===dataStr);
+  const minTotal=paradaDia.reduce((a,p)=>a+p.minutos,0);
+  const kgTotal=paradaDia.reduce((a,p)=>a+getKgPerdidos(p),0);
+
+  // por equipamento
+  const porEquip={};
+  paradaDia.forEach(p=>{
+    const k=p.equipNome||"Sem equipamento";
+    if(!porEquip[k]) porEquip[k]={nome:k,n:0,min:0,kg:0,ciclos:0,tipo:p.tipo||"kgh",cicloMin:p.cicloMin||0,cicloKg:p.cicloKg||0};
+    porEquip[k].n++;
+    porEquip[k].min+=p.minutos;
+    porEquip[k].kg+=getKgPerdidos(p);
+    if(p.tipo==="ciclo"&&p.cicloMin>0) porEquip[k].ciclos+=Math.floor(p.minutos/p.cicloMin);
+  });
+  const equipRows=Object.values(porEquip).sort((a,b)=>b.kg-a.kg);
+
+  // tarefas do dia (criadas ou com prazo hoje)
+  const tarefasDia=DB.demandas.filter(d=>d.dataEntrega===dataStr||d.criadoEm?.slice(0,10)===dataStr);
+
+  // monta mensagem
+  let msg="⏱️ *Relatório de Paradas — "+dataLabel+"*\n\n";
+
+  if(!paradaDia.length){
+    msg+="✅ Nenhuma parada registrada neste dia!\n";
+  } else {
+    msg+="📊 *Resumo:*\n";
+    msg+="• Paradas: *"+paradaDia.length+"*\n";
+    msg+="• Tempo total parado: *"+fmtDuracao2(minTotal)+"*\n";
+    if(kgTotal>0) msg+="• Total perdido: *"+kgTotal.toFixed(1)+" kg*\n";
+    msg+="\n⚙️ *Por equipamento:*\n";
+    equipRows.forEach(e=>{
+      msg+="🔧 "+e.nome+"\n";
+      msg+="   ↳ "+e.n+" parada"+(e.n>1?"s":"")+" · "+fmtDuracao2(e.min);
+      if(e.tipo==="ciclo"&&e.ciclos>0) msg+=" · "+e.ciclos+" ciclo"+(e.ciclos>1?"s":"")+" perdido"+(e.ciclos>1?"s":"");
+      if(e.kg>0) msg+=" · *-"+e.kg.toFixed(1)+" kg*";
+      msg+="\n";
+    });
+  }
+
+  if(tarefasDia.length){
+    msg+="\n📋 *Tarefas do dia ("+tarefasDia.length+"):*\n";
+    tarefasDia.slice(0,10).forEach(t=>{
+      const st=STATUS[t.status];
+      const done=t.status==="concluido";
+      msg+=(done?"✅":"⏳")+" "+t.titulo+(t.responsavel?" — "+t.responsavel:"")+" ["+( st?.label||t.status)+"]\n";
+    });
+    const concluidas=tarefasDia.filter(t=>t.status==="concluido").length;
+    msg+="\n*"+concluidas+"/"+tarefasDia.length+" tarefas concluídas*\n";
+  }
+
+  msg+="\n_Enviado pelo DemandaFlow LivUp_ 🚀";
+
+  const url="https://wa.me/?text="+encodeURIComponent(msg);
+  window.open(url,"_blank");
 }
 
 function irParaHoje(){
