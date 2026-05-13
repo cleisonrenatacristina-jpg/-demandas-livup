@@ -386,6 +386,29 @@
     <button class="btn btn-ghost" onclick="exportBackup()" title="Exportar backup completo">💾 Backup</button>
     <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()" title="Importar backup">📂 Importar</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importBackup(event)"/>
+    <button class="btn btn-ghost" onclick="abrirConfigSlack()" title="Configurar Slack" style="display:flex;align-items:center;gap:5px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="opacity:.7"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
+      Slack
+    </button>
+
+    <!-- MODAL CONFIG SLACK -->
+    <div id="modal-slack-cfg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)fecharConfigSlack()">
+      <div style="background:var(--card);border-radius:16px;padding:28px;width:100%;max-width:500px;border:1px solid var(--border2);box-shadow:0 20px 60px rgba(0,0,0,.5);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#4a154b"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
+          <span style="font-size:16px;font-weight:700;color:var(--text);">Configurar Slack</span>
+          <button onclick="fecharConfigSlack()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
+          Cole abaixo a <b>Webhook URL</b> do seu canal do Slack. Ela é gerada em <b>api.slack.com → Incoming Webhooks</b> e começa com <code style="background:var(--bg);padding:1px 5px;border-radius:4px;">https://hooks.slack.com/services/...</code>
+        </div>
+        <input id="slack-webhook-input" type="text" placeholder="https://hooks.slack.com/services/..." style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:12px;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:16px;"/>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button onclick="fecharConfigSlack()" class="btn btn-secondary">Cancelar</button>
+          <button onclick="salvarConfigSlack()" class="btn btn-primary">💾 Salvar</button>
+        </div>
+      </div>
+    </div>
     <button class="btn btn-ghost" onclick="openApiKeyModal()" id="btn-apikey" title="Configurar chave da API">🔑 API</button>
     <button class="btn btn-ghost" onclick="setView('reunioes')" id="btn-reunioes">📝 Reuniões</button>
     <button class="btn btn-amber" onclick="openAtaModal('new')">+ Reunião</button>
@@ -1731,7 +1754,13 @@ function openAtaDetail(id){
       <div class="ai-box-header">
         <span style="font-size:16px">✨</span>
         <span class="ai-box-title">Resumo Inteligente com IA</span>
-        <button class="btn btn-primary btn-sm" onclick="gerarResumoIA('${id}')" id="ai-btn-${id}">Gerar Resumo</button>
+        <div style="display:flex;gap:6px;align-items:center;margin-left:auto;">
+          ${aiSalvo?`<button class="btn btn-sm" onclick="enviarSlack('${id}')" style="background:#4a154b;color:#fff;border:none;display:flex;align-items:center;gap:5px;font-size:11px;padding:5px 12px;border-radius:8px;cursor:pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
+            Enviar no Slack
+          </button>`:""}
+          <button class="btn btn-primary btn-sm" onclick="gerarResumoIA('${id}')" id="ai-btn-${id}">Gerar Resumo</button>
+        </div>
       </div>
       <div id="ai-result-${id}">
         ${aiSalvo
@@ -1900,9 +1929,13 @@ Seja direto, profissional e use linguagem de negócios. Máximo 300 palavras.`;
       .replace(/\n/g,"<br>");
 
     resultDiv.innerHTML = `<div class="ai-result">${html}</div>
-      <div style="margin-top:8px;display:flex;gap:6px;align-items:center">
+      <div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         <span style="font-size:10px;color:var(--muted)">✨ Gerado por IA</span>
         <button class="btn btn-ghost btn-sm" onclick="gerarResumoIA('${ataId}')">🔄 Regenerar</button>
+        <button onclick="enviarSlack('${ataId}')" style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:8px;border:none;background:#4a154b;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
+          Enviar no Slack
+        </button>
       </div>`;
 
     DB.reunioes = DB.reunioes.map(x=>x.id===ataId?{...x,aiResumo:texto}:x);
@@ -1912,6 +1945,75 @@ Seja direto, profissional e use linguagem de negócios. Máximo 300 palavras.`;
     resultDiv.innerHTML = `<div style="font-size:12px;color:var(--red)">Erro ao gerar resumo.<br><small>${e.message}</small></div>`;
   }
   btn.disabled=false; btn.textContent="Gerar Resumo";
+}
+
+// ════════════════════════════════════════════════════════════════════
+// SLACK INTEGRATION
+// ════════════════════════════════════════════════════════════════════
+function getSlackWebhook(){ return localStorage.getItem("df-slack-webhook")||""; }
+function setSlackWebhook(url){ localStorage.setItem("df-slack-webhook",url); }
+
+function abrirConfigSlack(){
+  const url = getSlackWebhook();
+  document.getElementById("slack-webhook-input").value = url;
+  document.getElementById("modal-slack-cfg").style.display = "flex";
+}
+function fecharConfigSlack(){ document.getElementById("modal-slack-cfg").style.display = "none"; }
+function salvarConfigSlack(){
+  const url = document.getElementById("slack-webhook-input").value.trim();
+  if(url && !url.startsWith("https://hooks.slack.com/")){
+    alert("URL inválida. Deve começar com https://hooks.slack.com/");
+    return;
+  }
+  setSlackWebhook(url);
+  fecharConfigSlack();
+  alert("✅ Webhook do Slack salvo!");
+}
+
+async function enviarSlack(ataId){
+  const webhook = getSlackWebhook();
+  if(!webhook){
+    const abrir = confirm("Webhook do Slack não configurado.\n\nDeseja configurar agora?");
+    if(abrir) abrirConfigSlack();
+    return;
+  }
+  const r = DB.reunioes.find(x=>x.id===ataId);
+  if(!r?.aiResumo){ alert("Gere o resumo com IA primeiro."); return; }
+
+  const dd = DB.demandas.filter(d=>d.ataId===ataId);
+  const dt = r.data ? fmtDate(r.data) : "";
+  const partic = r.participantes?.length ? r.participantes.join(", ") : "—";
+
+  const msg = {
+    text: `📋 *Resumo de Reunião — ${r.titulo}*`,
+    blocks:[
+      { type:"header", text:{type:"plain_text", text:`📋 ${r.titulo}`, emoji:true}},
+      { type:"section", fields:[
+        {type:"mrkdwn", text:`📅 *Data:* ${dt}`},
+        {type:"mrkdwn", text:`📍 *Local:* ${r.local||"—"}`},
+        {type:"mrkdwn", text:`👥 *Participantes:* ${partic}`},
+        {type:"mrkdwn", text:`✅ *Tarefas geradas:* ${dd.length}`},
+      ]},
+      {type:"divider"},
+      { type:"section", text:{type:"mrkdwn", text:`✨ *Resumo IA:*\n${r.aiResumo.slice(0,2900)}`}},
+      ...(dd.length?[
+        {type:"divider"},
+        {type:"section", text:{type:"mrkdwn", text:`*📌 Tarefas (${dd.length}):*\n`+dd.slice(0,10).map((t,i)=>`${i+1}. ${PRIO[t.prioridade]?.dot||""} *${t.titulo}*${t.responsavel?" — "+t.responsavel:""}`).join("\n")}},
+      ]:[]),
+      {type:"context", elements:[{type:"mrkdwn",text:`_Enviado pelo DemandaFlow LivUp_`}]},
+    ]
+  };
+
+  try{
+    const btn = event.target.closest("button");
+    if(btn){ btn.disabled=true; btn.textContent="Enviando..."; }
+    const resp = await fetch(webhook,{method:"POST",body:JSON.stringify(msg)});
+    if(btn){ btn.disabled=false; btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg> ✅ Enviado!'; }
+    if(resp.ok){ setTimeout(()=>{ if(btn){ btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg> Enviar no Slack'; }},3000); }
+    else{ alert("❌ Erro ao enviar. Verifique a Webhook URL."); }
+  }catch(e){
+    alert("❌ Erro: "+e.message+"\n\nVerifique a Webhook URL nas configurações.");
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════
