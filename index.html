@@ -423,7 +423,7 @@
     <div class="view" id="view-fila">
       <div id="fila-wrap">
         <div class="fila-head">
-          <span>Demanda</span><span>Setor</span><span>Prioridade</span><span>Status</span><span>Entrega</span><span>Origem</span><span>Anexos</span>
+          <span>Demanda</span><span>Prioridade</span><span>Setor</span><span>Status</span><span>Entrega</span><span>Origem</span><span>Anexos</span>
         </div>
         <div id="fila-body"></div>
       </div>
@@ -1051,8 +1051,8 @@ function renderFila() {
       : `<span style="color:var(--border2);font-size:11px">—</span>`;
     return `<div class="fila-row" onclick="openDemandaModal('${d.id}')" style="background:${i%2===0?"var(--card)":"var(--surface)"}">
       <div><div class="fila-row-title">${escHtml(d.titulo)}</div>${d.responsavel?`<div class="fila-row-sub">👤 ${escHtml(d.responsavel)}</div>`:""}</div>
-      <div>${setor?tagHtml(setor.cor,setor.nome):""}</div>
       <div>${tagHtml(pc.color,pc.dot+" "+pc.label)}</div>
+      <div>${setor?tagHtml(setor.cor,setor.nome):""}</div>
       <div>${tagHtml(sc.color,sc.icon+" "+sc.label)}</div>
       <div class="${cls}" style="font-size:11px">${d.dataEntrega?lbl:"—"}</div>
       <div style="font-size:11px;color:var(--muted)">${escHtml(d.origem||"—")}</div>
