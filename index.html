@@ -702,18 +702,27 @@
   <div class="modal" style="max-width:700px;">
     <div class="modal-hd">
       <div class="modal-hd-title" id="ma-title">📝 Nova Ata de Reunião</div>
-      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-ata')">✕</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="draft-indicator" style="font-size:10px;color:var(--accent2);opacity:0;transition:opacity .5s;"></span>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-ata')">✕</button>
+      </div>
+    </div>
+    <!-- Banner rascunho restaurado -->
+    <div id="draft-banner" style="display:none;align-items:center;gap:10px;background:#1a2a1a;border-bottom:1px solid #2a4a2a;padding:8px 16px;">
+      <span style="font-size:13px;">💾</span>
+      <span style="flex:1;font-size:12px;color:#7abf9e;">Rascunho restaurado! Você tinha um preenchimento em andamento.</span>
+      <button onclick="clearDraft();showDraftBanner(false);document.getElementById('ma-titulo').value='';document.getElementById('ma-participantes').value='';document.getElementById('ma-pauta').value='';document.getElementById('ma-local').value='';ataTaskList=[];renderAtaTarefas();updateAtaSaveBtn();" style="padding:3px 10px;border-radius:6px;border:1px solid #2a4a2a;background:#0f1f0f;color:#f87171;font-size:11px;cursor:pointer;font-family:inherit;">🗑️ Descartar</button>
     </div>
     <div class="modal-body">
       <!-- META DA REUNIÃO -->
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;">
         <div class="sec-label" style="color:var(--sky)">📋 Dados da Reunião</div>
         <div class="grid2" style="gap:10px;">
-          <div class="field span2"><label>Título / Assunto *</label><input id="ma-titulo" placeholder="Ex: Planejamento Mensal — Maio 2026"/></div>
-          <div class="field"><label>Data</label><input type="date" id="ma-data"/></div>
-          <div class="field"><label>Local / Plataforma</label><input id="ma-local" placeholder="Sala, Teams, Zoom..."/></div>
-          <div class="field span2"><label>Participantes (separe por vírgula)</label><input id="ma-participantes" placeholder="Cleison, Maria, João..."/></div>
-          <div class="field span2"><label>Pauta / Resumo Geral</label><textarea id="ma-pauta" rows="2" placeholder="Decisões tomadas, contexto geral..."></textarea></div>
+          <div class="field span2"><label>Título / Assunto *</label><input id="ma-titulo" placeholder="Ex: Planejamento Mensal — Maio 2026" oninput="saveDraft()"/></div>
+          <div class="field"><label>Data</label><input type="date" id="ma-data" onchange="saveDraft()"/></div>
+          <div class="field"><label>Local / Plataforma</label><input id="ma-local" placeholder="Sala, Teams, Zoom..." oninput="saveDraft()"/></div>
+          <div class="field span2"><label>Participantes (separe por vírgula)</label><input id="ma-participantes" placeholder="Cleison, Maria, João..." oninput="saveDraft()"/></div>
+          <div class="field span2"><label>Pauta / Resumo Geral</label><textarea id="ma-pauta" rows="2" placeholder="Decisões tomadas, contexto geral..." oninput="saveDraft()"></textarea></div>
         </div>
       </div>
       <!-- TAREFAS -->
@@ -1400,16 +1409,74 @@ function openAtaModal(idOrNew){
   const r = idOrNew==="new"?null:DB.reunioes.find(x=>x.id===idOrNew);
 
   document.getElementById("ma-title").textContent = r?"📝 Editar Ata":"📝 Nova Ata de Reunião";
-  document.getElementById("ma-titulo").value         = r?.titulo||"";
-  document.getElementById("ma-data").value           = r?.data||new Date().toISOString().slice(0,10);
-  document.getElementById("ma-local").value          = r?.local||"";
-  document.getElementById("ma-participantes").value  = (r?.participantes||[]).join(", ");
-  document.getElementById("ma-pauta").value          = r?.pauta||"";
 
-  ataTaskList = r?(r.tarefas||[]).map(t=>({...t,_id:uid()})):[];
+  // Se for nova reunião, tenta restaurar rascunho salvo
+  if(!r){
+    const draft = getDraft();
+    document.getElementById("ma-titulo").value        = draft?.titulo||"";
+    document.getElementById("ma-data").value          = draft?.data||new Date().toISOString().slice(0,10);
+    document.getElementById("ma-local").value         = draft?.local||"";
+    document.getElementById("ma-participantes").value = draft?.participantes||"";
+    document.getElementById("ma-pauta").value         = draft?.pauta||"";
+    ataTaskList = (draft?.tarefas||[]).map(t=>({...t,_id:t._id||uid()}));
+    if(draft?.titulo||draft?.pauta||draft?.participantes){
+      showDraftBanner(true);
+    } else {
+      showDraftBanner(false);
+    }
+  } else {
+    document.getElementById("ma-titulo").value        = r?.titulo||"";
+    document.getElementById("ma-data").value          = r?.data||new Date().toISOString().slice(0,10);
+    document.getElementById("ma-local").value         = r?.local||"";
+    document.getElementById("ma-participantes").value = (r?.participantes||[]).join(", ");
+    document.getElementById("ma-pauta").value         = r?.pauta||"";
+    ataTaskList = r?(r.tarefas||[]).map(t=>({...t,_id:uid()})):[];
+    showDraftBanner(false);
+  }
+
   renderAtaTarefas();
   updateAtaSaveBtn();
   document.getElementById("modal-ata").style.display="flex";
+  // inicia auto-save a cada 3 segundos
+  startDraftAutoSave();
+}
+
+const DRAFT_KEY = "df-ata-draft";
+let draftTimer = null;
+
+function getDraft(){
+  try{ return JSON.parse(localStorage.getItem(DRAFT_KEY)||"null"); }catch{ return null; }
+}
+function saveDraft(){
+  if(editingAtaId) return; // só salva rascunho para novas atas
+  const draft = {
+    titulo:        document.getElementById("ma-titulo")?.value||"",
+    data:          document.getElementById("ma-data")?.value||"",
+    local:         document.getElementById("ma-local")?.value||"",
+    participantes: document.getElementById("ma-participantes")?.value||"",
+    pauta:         document.getElementById("ma-pauta")?.value||"",
+    tarefas:       ataTaskList||[],
+    savedAt:       new Date().toISOString(),
+  };
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  // mostra indicador salvo
+  const ind = document.getElementById("draft-indicator");
+  if(ind){ ind.textContent="💾 Rascunho salvo às "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); ind.style.opacity=1; }
+}
+function clearDraft(){
+  localStorage.removeItem(DRAFT_KEY);
+  showDraftBanner(false);
+}
+function startDraftAutoSave(){
+  stopDraftAutoSave();
+  draftTimer = setInterval(saveDraft, 3000);
+}
+function stopDraftAutoSave(){
+  if(draftTimer){ clearInterval(draftTimer); draftTimer=null; }
+}
+function showDraftBanner(show){
+  const b = document.getElementById("draft-banner");
+  if(b) b.style.display = show?"flex":"none";
 }
 
 function addTarefaAta(){
@@ -1515,7 +1582,7 @@ function saveAta(){
     DB.demandas.push(...novas);
   }
 
-  save(); closeModal("modal-ata"); render();
+  save(); clearDraft(); stopDraftAutoSave(); closeModal("modal-ata"); render();
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2309,7 +2376,10 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeLightbox(); 
 // ════════════════════════════════════════════════════════════════════
 // HELPERS
 // ════════════════════════════════════════════════════════════════════
-function closeModal(id){ document.getElementById(id).style.display="none"; }
+function closeModal(id){
+  document.getElementById(id).style.display="none";
+  if(id==="modal-ata") stopDraftAutoSave();
+}
 
 function escHtml(str){
   return String(str||"")
