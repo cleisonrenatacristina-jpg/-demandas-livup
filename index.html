@@ -2122,27 +2122,39 @@ function getKgPerdidos(p){
 }
 
 function getTodasParadas(){
-  // paradas das demandas
   const dParadas = [];
   DB.demandas.forEach(d=>{
     if(!d.paradas?.length) return;
     const setor = DB.setores.find(s=>s.id===d.setorId);
-    const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,kgh:0}:e);
+    const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,tipo:"kgh",kgh:0,cicloMin:0,cicloKg:0}:e);
     const eq = equips.find(e=>e.nome===d.equipamento);
     d.paradas.forEach(p=>{
       if(!p.inicio||!p.fim) return;
       const ini = new Date(p.inicio), fim = new Date(p.fim);
       if(fim<=ini) return;
       const min = Math.round((fim-ini)/60000);
+      // usa dados salvos na parada, se não tiver usa do equipamento
+      const tipo      = p.tipo      || eq?.tipo      || "kgh";
+      const cicloMin  = p.cicloMin  || eq?.cicloMin  || 0;
+      const cicloKg   = p.cicloKg   || eq?.cicloKg   || 0;
+      const kgh       = p.kgh       || eq?.kgh       || 0;
+      // recalcula kgPerdidos
+      let kgPerdidos = 0;
+      if(tipo==="ciclo" && cicloMin>0 && cicloKg>0){
+        kgPerdidos = Math.floor(min/cicloMin)*cicloKg;
+      } else if(kgh>0){
+        kgPerdidos = (min/60)*kgh;
+      }
       dParadas.push({
         id: p.id, setorId: d.setorId, setorNome: setor?.nome||"",
-        equipNome: d.equipamento||"", kgh: eq?.kgh||0,
+        equipNome: d.equipamento||"", tipo, kgh, cicloMin, cicloKg,
+        receitaId: p.receitaId||"", receitaNome: p.receitaNome||"",
         inicio: p.inicio, fim: p.fim, obs: p.obs||"",
-        minutos: min, fonte: "demanda", demandaTitulo: d.titulo
+        minutos: min, kgPerdidos, fonte: "demanda", demandaTitulo: d.titulo,
+        demandaId: d.id,
       });
     });
   });
-  // paradas diretas salvas no DB
   const diretas = (DB.paradasDiretas||[]);
   return [...dParadas, ...diretas].sort((a,b)=>b.inicio.localeCompare(a.inicio));
 }
@@ -2577,7 +2589,7 @@ function renderParadasView(){
           +'</span>'
           +'<div style="display:flex;gap:4px;align-items:center;">'
           +'<button onclick="abrirEditParada(\''+p.id+'\',\''+p.fonte+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#1a2a3d;color:#60a5fa;font-size:10px;padding:3px 8px;font-family:inherit;" title="Editar">✏️</button>'
-          +'<button onclick="deletarParada(\''+p.id+'\',\''+p.fonte+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 8px;font-family:inherit;" title="Excluir">✕</button>'
+          +'<button onclick="deletarParada(\''+p.id+'\',\''+p.fonte+'\','+(p.demandaId?'\''+p.demandaId+'\'':'null')+')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 8px;font-family:inherit;" title="Excluir">✕</button>'
           +'</div>'
           +'</div>';
       }).join("");
@@ -2664,12 +2676,13 @@ function irParaAmanha(){
   renderParadasView();
 }
 
-function deletarParada(id, fonte){
+function deletarParada(id, fonte, demandaId){
   if(!confirm("Remover esta parada permanentemente?")) return;
   if(fonte==="demanda"){
-    // remove de dentro da demanda
     DB.demandas = DB.demandas.map(d=>{
       if(!d.paradas?.length) return d;
+      // usa demandaId se disponível para ser mais preciso
+      if(demandaId && d.id!==demandaId) return d;
       return {...d, paradas: d.paradas.filter(p=>p.id!==id)};
     });
   } else {
