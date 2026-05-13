@@ -138,23 +138,24 @@
   /* ── FILA VIEW ── */
   #fila-wrap { flex: 1; overflow-y: auto; padding: 16px 20px; }
   .fila-head {
-    display: grid; grid-template-columns: 2fr 90px 110px 140px 110px 110px 90px;
-    gap: 0; padding: 8px 14px;
+    display: grid; grid-template-columns: 2fr 100px 110px 130px 130px 100px 80px;
+    gap: 8px; padding: 8px 14px;
     background: var(--card); border: 1px solid var(--border);
     border-radius: 8px 8px 0 0;
     font-size: 10px; font-weight: 700; color: var(--muted);
     letter-spacing: .8px; text-transform: uppercase;
   }
   .fila-row {
-    display: grid; grid-template-columns: 2fr 90px 110px 140px 110px 110px 90px;
-    gap: 0; padding: 10px 14px; align-items: center;
+    display: grid; grid-template-columns: 2fr 100px 110px 130px 130px 100px 80px;
+    gap: 8px; padding: 10px 14px; align-items: center;
     border: 1px solid var(--border); border-top: none;
     cursor: pointer; transition: background .1s;
   }
   .fila-row:hover { background: var(--card); }
   .fila-row:last-child { border-radius: 0 0 8px 8px; }
-  .fila-row-title { font-weight: 700; font-size: 12px; }
-  .fila-row-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .fila-row > div { overflow: hidden; min-width: 0; }
+  .fila-row-title { font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fila-row-sub { font-size: 10px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* ── REUNIÕES VIEW ── */
   #reunioes-wrap { flex: 1; overflow-y: auto; padding: 16px 20px; }
