@@ -1876,6 +1876,9 @@ function openAtaDetail(id){
           ${aiSalvo?`<button class="btn btn-sm" onclick="enviarSlack('${id}')" style="background:#4a154b;color:#fff;border:none;display:flex;align-items:center;gap:5px;font-size:11px;padding:5px 12px;border-radius:8px;cursor:pointer;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
             Enviar no Slack
+          </button>
+          <button class="btn btn-sm" onclick="enviarResumoAta_Wa('${id}')" style="background:#25d366;color:#fff;border:none;display:flex;align-items:center;gap:5px;font-size:11px;padding:5px 12px;border-radius:8px;cursor:pointer;">
+            📲 WhatsApp
           </button>`:""}
           <button class="btn btn-primary btn-sm" onclick="gerarResumoIA('${id}')" id="ai-btn-${id}">Gerar Resumo</button>
         </div>
@@ -2052,7 +2055,10 @@ Seja direto, profissional e use linguagem de negócios. Máximo 300 palavras.`;
         <button class="btn btn-ghost btn-sm" onclick="gerarResumoIA('${ataId}')">🔄 Regenerar</button>
         <button onclick="enviarSlack('${ataId}')" style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:8px;border:none;background:#4a154b;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
-          Enviar no Slack
+          Slack
+        </button>
+        <button onclick="enviarResumoAta_Wa('${ataId}')" style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:8px;border:none;background:#25d366;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">
+          📲 WhatsApp
         </button>
       </div>`;
 
@@ -2063,6 +2069,35 @@ Seja direto, profissional e use linguagem de negócios. Máximo 300 palavras.`;
     resultDiv.innerHTML = `<div style="font-size:12px;color:var(--red)">Erro ao gerar resumo.<br><small>${e.message}</small></div>`;
   }
   btn.disabled=false; btn.textContent="Gerar Resumo";
+}
+
+function enviarResumoAta_Wa(ataId){
+  const r = DB.reunioes.find(x=>x.id===ataId);
+  if(!r?.aiResumo){ alert("Gere o resumo com IA primeiro."); return; }
+
+  const dt = r.data ? fmtDate(r.data) : "";
+  const partic = r.participantes?.length ? r.participantes.join(", ") : "—";
+  const dd = DB.demandas.filter(d=>d.ataId===ataId);
+
+  let msg = `📋 *Resumo de Reunião*\n`;
+  msg += `*${r.titulo}*\n\n`;
+  if(dt)     msg += `📅 Data: ${dt}\n`;
+  if(r.local) msg += `📍 Local: ${r.local}\n`;
+  if(partic)  msg += `👥 Participantes: ${partic}\n`;
+  if(dd.length) msg += `✅ Tarefas geradas: ${dd.length}\n`;
+  msg += `\n✨ *Resumo IA:*\n${r.aiResumo}\n`;
+
+  if(dd.length){
+    msg += `\n📌 *Tarefas (${dd.length}):*\n`;
+    dd.slice(0,10).forEach((t,i)=>{
+      const done = t.status==="concluido";
+      msg += `${done?"✅":"⏳"} ${t.titulo}${t.responsavel?" — "+t.responsavel:""}\n`;
+    });
+  }
+
+  msg += `\n_Enviado pelo DemandaFlow LivUp_ 🚀`;
+
+  window.open("https://wa.me/?text="+encodeURIComponent(msg), "_blank");
 }
 
 // ════════════════════════════════════════════════════════════════════
