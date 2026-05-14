@@ -542,12 +542,25 @@
               </div>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;">
+            <div class="field">
+              <label>🏷️ Motivo / Categoria</label>
+              <select id="np-motivo" onchange="onNpMotivoChange()" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;">
+                <option value="">— Selecione —</option>
+                <option value="manutencao">🔧 Manutenção</option>
+                <option value="mau_uso">⚠️ Mau Uso</option>
+                <option value="energia">⚡ Falta de energia</option>
+                <option value="limpeza">🧹 Limpeza</option>
+                <option value="insumo">📦 Falta de insumo</option>
+                <option value="falha">🔴 Falha de equipamento</option>
+                <option value="outro">💬 Outro</option>
+              </select>
+            </div>
             <div class="field">
               <label>Observação</label>
-              <input type="text" id="np-obs" placeholder="Motivo da parada..." style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+              <input type="text" id="np-obs" placeholder="Detalhe o motivo..." style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
             </div>
-            <button class="btn" onclick="registrarParadaDireta()" style="background:#f97316;color:#0b0f1a;padding:8px 20px;font-size:13px;white-space:nowrap;">+ Registrar Parada</button>
+            <button class="btn" onclick="registrarParadaDireta()" style="background:#f97316;color:#0b0f1a;padding:8px 20px;font-size:13px;white-space:nowrap;">+ Registrar</button>
           </div>
         </div>
 
@@ -593,9 +606,30 @@
         </div>
 
         <!-- LISTA COMPLETA DE PARADAS -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;">
           <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;">📋 Todas as Paradas Registradas</div>
           <div id="pd-lista-todas"></div>
+        </div>
+
+        <!-- DASHBOARD MAU USO -->
+        <div style="background:#1a0a0a;border:2px solid #f43f5e40;border-radius:12px;padding:16px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+            <span style="font-size:16px;">⚠️</span>
+            <div style="font-size:13px;font-weight:700;color:#f43f5e;letter-spacing:.5px;text-transform:uppercase;flex:1;">Dashboard — Perdas por Mau Uso</div>
+            <span id="mau-uso-badge" style="font-size:10px;padding:2px 10px;border-radius:20px;background:#f43f5e20;color:#f43f5e;border:1px solid #f43f5e40;font-weight:700;"></span>
+          </div>
+          <!-- KPIs mau uso -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;" id="mu-kpis"></div>
+          <!-- por equipamento mau uso -->
+          <div style="background:var(--card);border:1px solid #f43f5e30;border-radius:10px;padding:12px;margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:#f43f5e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🔧 Impacto por Equipamento</div>
+            <div id="mu-por-equip"></div>
+          </div>
+          <!-- lista mau uso -->
+          <div style="background:var(--card);border:1px solid #f43f5e30;border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:700;color:#f43f5e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">📋 Registros de Mau Uso</div>
+            <div id="mu-lista"></div>
+          </div>
         </div>
 
       </div>
@@ -2202,6 +2236,97 @@ function fecharPautaModal(){
   saveDraft();
 }
 
+const MOTIVOS = {
+  manutencao: {label:"Manutenção",     emoji:"🔧", cor:"#f59e0b"},
+  mau_uso:    {label:"Mau Uso",        emoji:"⚠️", cor:"#f43f5e"},
+  energia:    {label:"Falta de Energia",emoji:"⚡", cor:"#a78bfa"},
+  limpeza:    {label:"Limpeza",         emoji:"🧹", cor:"#34d399"},
+  insumo:     {label:"Falta de Insumo", emoji:"📦", cor:"#60a5fa"},
+  falha:      {label:"Falha Equipamento",emoji:"🔴",cor:"#ef4444"},
+  outro:      {label:"Outro",           emoji:"💬", cor:"#94a3b8"},
+};
+
+function onNpMotivoChange(){
+  const motivo = document.getElementById("np-motivo").value;
+  const np = document.getElementById("np-motivo");
+  if(motivo && MOTIVOS[motivo]){
+    np.style.borderColor = MOTIVOS[motivo].cor;
+    np.style.color = MOTIVOS[motivo].cor;
+  } else {
+    np.style.borderColor = "";
+    np.style.color = "";
+  }
+}
+
+function renderMauUsoDash(todas){
+  const muParadas = todas.filter(p=>p.motivo==="mau_uso");
+  const badge = document.getElementById("mau-uso-badge");
+  const kpis  = document.getElementById("mu-kpis");
+  const equip = document.getElementById("mu-por-equip");
+  const lista = document.getElementById("mu-lista");
+  if(!kpis||!equip||!lista) return;
+
+  if(badge) badge.textContent = muParadas.length + " registro(s)";
+
+  const minTotal = muParadas.reduce((a,p)=>a+p.minutos,0);
+  const kgTotal  = muParadas.reduce((a,p)=>a+getKgPerdidos(p),0);
+  // semana
+  const hoje7 = new Date(); hoje7.setDate(hoje7.getDate()-7);
+  const semana = muParadas.filter(p=>new Date(p.inicio)>=hoje7);
+  const kgSemana = semana.reduce((a,p)=>a+getKgPerdidos(p),0);
+
+  kpis.innerHTML = [
+    {label:"Total Mau Uso",     val:muParadas.length+" paradas",  cor:"#f43f5e"},
+    {label:"Tempo perdido",     val:fmtDuracao2(minTotal),         cor:"#f59e0b"},
+    {label:"Kg perdidos total", val:kgTotal>0?kgTotal.toFixed(1)+" kg":"--", cor:"#ef4444"},
+    {label:"Kg últimos 7 dias", val:kgSemana>0?kgSemana.toFixed(1)+" kg":"--", cor:"#a78bfa"},
+  ].map(k=>`<div class="kpi-card" style="border-color:${k.cor}40;">
+    <div class="kpi-val" style="color:${k.cor}">${k.val}</div>
+    <div class="kpi-lbl">${k.label}</div>
+  </div>`).join("");
+
+  // por equipamento
+  const porEquip = {};
+  muParadas.forEach(p=>{
+    const k = p.equipNome||"Sem equipamento";
+    if(!porEquip[k]) porEquip[k]={nome:k,n:0,min:0,kg:0};
+    porEquip[k].n++; porEquip[k].min+=p.minutos; porEquip[k].kg+=getKgPerdidos(p);
+  });
+  const equipRows = Object.values(porEquip).sort((a,b)=>b.kg-a.kg);
+  const maxKg = Math.max(...equipRows.map(e=>e.kg),1);
+  equip.innerHTML = !equipRows.length
+    ?'<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px;">Nenhum registro de mau uso.</div>'
+    :equipRows.map(e=>`
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:12px;font-weight:600;">🔧 ${escHtml(e.nome)}</span>
+          <span style="font-size:11px;color:#f43f5e;font-weight:700;">${e.n}x · ${fmtDuracao2(e.min)}${e.kg>0?' · -'+e.kg.toFixed(1)+' kg':''}</span>
+        </div>
+        <div style="background:var(--bg);border-radius:4px;height:6px;overflow:hidden;">
+          <div style="height:100%;background:#f43f5e;border-radius:4px;width:${(e.kg/maxKg*100)||10}%;transition:width .3s;"></div>
+        </div>
+      </div>`).join("");
+
+  // lista
+  lista.innerHTML = !muParadas.length
+    ?'<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px;">Nenhum registro de mau uso.</div>'
+    :'<div class="parada-reg parada-reg-head"><span>Data/Hora</span><span>Equipamento</span><span style="text-align:right">Duração</span><span style="text-align:right">Kg perdidos</span><span>Observação</span><span></span></div>'
+    + muParadas.map(p=>{
+      const kg = getKgPerdidos(p);
+      return '<div class="parada-reg" style="border-left:3px solid #f43f5e;">'
+        +'<span style="font-size:11px;color:var(--muted)">'+fmtDateTime(p.inicio)+'</span>'
+        +'<span style="font-weight:600">⚙️ '+escHtml(p.equipNome||'--')+'<br><span style="font-size:10px;color:var(--muted)">'+escHtml(p.setorNome||'')+'</span></span>'
+        +'<span style="text-align:right;color:#f59e0b">'+fmtDuracao2(p.minutos)+'</span>'
+        +'<span style="text-align:right;font-weight:700;color:#f43f5e">'+(kg>0?'-'+kg.toFixed(1)+' kg':'--')+'</span>'
+        +'<span style="font-size:11px;color:var(--muted)">'+escHtml(p.obs||'--')+(p.receitaNome?'<br><span style="color:#a78bfa;">🍳 '+escHtml(p.receitaNome)+'</span>':'')+'</span>'
+        +'<div style="display:flex;gap:4px;">'
+        +'<button onclick="abrirEditParada(\''+p.id+'\',\''+p.fonte+'\')" style="cursor:pointer;border:none;border-radius:6px;background:#1a2a3d;color:#60a5fa;font-size:10px;padding:3px 8px;font-family:inherit;">✏️</button>'
+        +'<button onclick="deletarParada(\''+p.id+'\',\''+p.fonte+'\','+(p.demandaId?'\''+p.demandaId+'\'':'null')+')" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 8px;font-family:inherit;">✕</button>'
+        +'</div>'
+        +'</div>';
+    }).join("");
+}
+
 function toggleReceitasPanel(){
   const p = document.getElementById("receitas-panel");
   const b = document.getElementById("btn-toggle-receitas");
@@ -2369,6 +2494,7 @@ function registrarParadaDireta(){
   const inicio   = document.getElementById("np-inicio").value;
   const fim      = document.getElementById("np-fim").value;
   const obs      = document.getElementById("np-obs").value.trim();
+  const motivo   = document.getElementById("np-motivo")?.value||"";
   const receitaId= document.getElementById("np-receita")?.value||"";
   const receita  = (DB.receitas||[]).find(r=>r.id===receitaId);
 
@@ -2405,11 +2531,13 @@ function registrarParadaDireta(){
     cicloMin: cicloMinFinal, cicloKg: cicloKgFinal,
     receitaId, receitaNome: receita?.nome||"",
     receitaCaldeira: receita?.caldeira||"",
-    inicio, fim, obs, minutos: min, kgPerdidos,
+    motivo, inicio, fim, obs, minutos: min, kgPerdidos,
     fonte:"direta"
   });
   save();
   document.getElementById("np-obs").value="";
+  const motivoEl = document.getElementById("np-motivo");
+  if(motivoEl){ motivoEl.value=""; motivoEl.style.borderColor=""; motivoEl.style.color=""; }
   const recEl = document.getElementById("np-receita");
   if(recEl) recEl.value="";
   const infoEl = document.getElementById("np-receita-info");
@@ -2445,6 +2573,7 @@ function renderParadasView(){
   if(currentView!=="paradas") return;
   renderReceitasResumo();
   atualizarNpReceitas();
+  renderMauUsoDash(getTodasParadas());
   const fSetor=document.getElementById("pd-setor-filtro");
   const fEquip=document.getElementById("pd-equip-filtro");
   const fData=document.getElementById("pd-data-filtro");
@@ -2584,6 +2713,7 @@ function renderParadasView(){
           +'<span style="text-align:right;font-weight:700;color:'+(kg>0?'#ef4444':'var(--muted)')+';">'+(kg>0?'-'+kg.toFixed(1)+' kg':'--')+calcDetalhe+'</span>'
           +'<span style="font-size:11px;color:var(--muted)">'
             +escHtml(p.obs||'')
+            +(p.motivo&&MOTIVOS[p.motivo]?'<br><span style="color:'+MOTIVOS[p.motivo].cor+';font-size:10px;font-weight:700;">'+MOTIVOS[p.motivo].emoji+' '+MOTIVOS[p.motivo].label+'</span>':'')
             +(p.receitaNome?'<br><span style="color:#a78bfa;">🍳 '+escHtml(p.receitaNome)+'</span>':'')
             +(p.fonte==="demanda"?'<br><span style="color:var(--sky)">📋 '+escHtml(p.demandaTitulo||'')+'</span>':'')
           +'</span>'
@@ -2717,6 +2847,8 @@ function abrirEditParada(id, fonte){
   document.getElementById("ep-inicio").value = p.inicio?.slice(0,16)||"";
   document.getElementById("ep-fim").value    = p.fim?.slice(0,16)||"";
   document.getElementById("ep-obs").value    = p.obs||"";
+  const epMotivo = document.getElementById("ep-motivo");
+  if(epMotivo) epMotivo.value = p.motivo||"";
 
   // receitas
   const recSel = document.getElementById("ep-receita");
@@ -2803,6 +2935,7 @@ function salvarEditParada(){
   const inicio = document.getElementById("ep-inicio").value;
   const fim    = document.getElementById("ep-fim").value;
   const obs    = document.getElementById("ep-obs").value.trim();
+  const motivo = document.getElementById("ep-motivo")?.value||"";
   const receitaId = document.getElementById("ep-receita").value;
   const receita = (DB.receitas||[]).find(r=>r.id===receitaId);
 
@@ -2827,13 +2960,13 @@ function salvarEditParada(){
     DB.demandas = DB.demandas.map(d=>{
       if(!d.paradas?.find(p=>p.id===editingParadaId)) return d;
       return {...d, paradas: d.paradas.map(p=>p.id!==editingParadaId?p:{
-        ...p, inicio, fim, obs, tipo, cicloMin, cicloKg, kgh,
+        ...p, inicio, fim, obs, motivo, tipo, cicloMin, cicloKg, kgh,
         receitaId, receitaNome:receita?.nome||"", kgPerdidos, minutos:min
       })};
     });
   } else {
     DB.paradasDiretas = (DB.paradasDiretas||[]).map(p=>p.id!==editingParadaId?p:{
-      ...p, inicio, fim, obs, tipo, cicloMin, cicloKg, kgh,
+      ...p, inicio, fim, obs, motivo, tipo, cicloMin, cicloKg, kgh,
       receitaId, receitaNome:receita?.nome||"", kgPerdidos, minutos:min
     });
   }
@@ -3255,8 +3388,21 @@ updateApiKeyBtn();
         </div>
       </div>
       <div class="field">
+        <label>🏷️ Motivo / Categoria</label>
+        <select id="ep-motivo" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;">
+          <option value="">— Selecione —</option>
+          <option value="manutencao">🔧 Manutenção</option>
+          <option value="mau_uso">⚠️ Mau Uso</option>
+          <option value="energia">⚡ Falta de energia</option>
+          <option value="limpeza">🧹 Limpeza</option>
+          <option value="insumo">📦 Falta de insumo</option>
+          <option value="falha">🔴 Falha de equipamento</option>
+          <option value="outro">💬 Outro</option>
+        </select>
+      </div>
+      <div class="field">
         <label>Observação</label>
-        <input type="text" id="ep-obs" placeholder="Motivo da parada..." style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+        <input type="text" id="ep-obs" placeholder="Detalhe o motivo..." style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
       </div>
       <!-- preview do cálculo -->
       <div id="ep-preview" style="background:#1a0d00;border:1px solid #f9731640;border-radius:8px;padding:10px;font-size:12px;color:#f97316;"></div>
