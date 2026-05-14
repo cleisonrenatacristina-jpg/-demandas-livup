@@ -2879,6 +2879,7 @@ function deletarParadaDireta(id){ deletarParada(id,"direta"); }
 
 let editingParadaId = null;
 let editingParadaFonte = null;
+let editingParadaTipo = "kgh";
 
 function abrirEditParada(id, fonte){
   // busca a parada
@@ -2911,6 +2912,7 @@ function abrirEditParada(id, fonte){
 
   // tipo
   const tipo = p.tipo||"kgh";
+  editingParadaTipo = tipo;
   setEpTipo(tipo);
   document.getElementById("ep-ciclo-min").value = p.cicloMin||"";
   document.getElementById("ep-ciclo-kg").value  = p.cicloKg||"";
@@ -2926,6 +2928,7 @@ function fecharEditParada(){
 }
 
 function setEpTipo(tipo){
+  editingParadaTipo = tipo;
   const cicloArea = document.getElementById("ep-ciclo-area");
   const kghArea   = document.getElementById("ep-kgh-area");
   const btnKgh    = document.getElementById("ep-tipo-kgh");
@@ -2936,7 +2939,6 @@ function setEpTipo(tipo){
   btnKgh.style.color         = tipo==="kgh"?"#60a5fa":"var(--muted)";
   btnCiclo.style.borderColor = tipo==="ciclo"?"#a78bfa":"var(--border2)";
   btnCiclo.style.color       = tipo==="ciclo"?"#a78bfa":"var(--muted)";
-  btnKgh.dataset.tipo="kgh"; btnCiclo.dataset.tipo="ciclo";
   atualizarEpPreview();
 }
 
@@ -2960,7 +2962,7 @@ function atualizarEpPreview(){
   const ini = new Date(inicio), f = new Date(fim);
   if(f<=ini){ prev.textContent="⚠️ Fim deve ser depois do início."; return; }
   const min = Math.round((f-ini)/60000);
-  const tipo = document.getElementById("ep-tipo-ciclo").style.color==="#a78bfa"?"ciclo":"kgh";
+  const tipo = editingParadaTipo;
   let txt = `⏱️ Duração: ${fmtDuracao2(min)}`;
   if(tipo==="ciclo"){
     const cicloMin = parseFloat(document.getElementById("ep-ciclo-min").value)||0;
@@ -2997,7 +2999,7 @@ function salvarEditParada(){
   if(f<=ini) return alert("Fim deve ser depois do início.");
   const min = Math.round((f-ini)/60000);
 
-  const tipo = document.getElementById("ep-tipo-ciclo").style.color==="#a78bfa"?"ciclo":"kgh";
+  const tipo = editingParadaTipo;
   const cicloMin = parseFloat(document.getElementById("ep-ciclo-min").value)||0;
   const cicloKg  = parseFloat(document.getElementById("ep-ciclo-kg").value)||0;
   const kgh      = parseFloat(document.getElementById("ep-kgh").value)||0;
