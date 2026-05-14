@@ -2167,11 +2167,10 @@ async function enviarSlack(ataId){
 // cada parada: { id, setorId, equipNome, kgh, inicio, fim, obs, minutos }
 
 function getKgPerdidos(p){
-  if(p.tipo==="ciclo" && p.cicloMin>0 && p.cicloKg>0){
-    // proporcional: kg/min × minutos parados
+  // sempre recalcula proporcional — ignora valor salvo
+  if(p.cicloMin>0 && p.cicloKg>0){
     return (p.cicloKg / p.cicloMin) * p.minutos;
   }
-  if(p.kgPerdidos!=null && p.tipo==="ciclo") return p.kgPerdidos;
   if(p.kgh>0) return (p.minutos/60)*p.kgh;
   return 0;
 }
@@ -2731,9 +2730,9 @@ function renderParadasView(){
         const kg = getKgPerdidos(p);
         // detalhe do cálculo para transparência
         let calcDetalhe = "";
-        if(p.tipo==="ciclo" && p.cicloMin>0 && p.cicloKg>0){
-          const kgMin = (p.cicloKg/p.cicloMin);
-          calcDetalhe = `<span style="font-size:9px;color:#a78bfa;display:block;">🔄 ${p.cicloKg}kg÷${p.cicloMin}min×${p.minutos}min</span>`;
+        if(p.cicloMin>0 && p.cicloKg>0){
+          const kgR = (p.cicloKg/p.cicloMin)*p.minutos;
+          calcDetalhe = `<span style="font-size:9px;color:#a78bfa;display:block;">📐 ${p.cicloKg}kg÷${p.cicloMin}min×${p.minutos}min = ${kgR.toFixed(1)}kg</span>`;
         } else if(p.kgh>0){
           calcDetalhe = `<span style="font-size:9px;color:var(--muted);display:block;">${(p.minutos/60).toFixed(1)}h × ${p.kgh}kg/h</span>`;
         }
