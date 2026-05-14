@@ -467,13 +467,19 @@
       <div id="paradas-wrap" style="overflow-y:auto;flex:1;padding:16px 20px;">
 
         <!-- RECEITAS CADASTRADAS -->
-        <div style="background:var(--card);border:1px solid #1a2a3d;border-radius:12px;padding:14px;margin-bottom:16px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="background:var(--card);border:1px solid #1a2a3d;border-radius:12px;margin-bottom:16px;overflow:hidden;">
+          <div onclick="toggleReceitasBloco()" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none;">
             <div style="font-size:13px;font-weight:700;color:#60a5fa;letter-spacing:.5px;text-transform:uppercase;flex:1;">🍳 Receitas Cadastradas</div>
-            <button class="btn btn-ghost" onclick="toggleReceitasPanel()" id="btn-toggle-receitas" style="font-size:11px;padding:4px 12px;color:#60a5fa;border-color:#1e3a5f;">+ Gerenciar Receitas</button>
+            <span id="receitas-bloco-count" style="font-size:10px;color:var(--muted);"></span>
+            <span id="receitas-bloco-arrow" style="font-size:14px;color:#60a5fa;transition:transform .2s;">▼</span>
           </div>
-          <div id="receitas-panel" style="display:none;">
-            <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <div id="receitas-bloco-body" style="display:none;padding:0 14px 14px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <div style="flex:1;"></div>
+              <button class="btn btn-ghost" onclick="toggleReceitasPanel();event.stopPropagation();" id="btn-toggle-receitas" style="font-size:11px;padding:4px 12px;color:#60a5fa;border-color:#1e3a5f;">+ Gerenciar</button>
+            </div>
+            <div id="receitas-panel" style="display:none;">
+              <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
               <input id="rec-nome" placeholder="Nome da receita..." style="flex:1;min-width:160px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
               <select id="rec-tipo" style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;">
                 <option value="kgh">⚖️ kg/h</option>
@@ -484,6 +490,7 @@
             <div id="receitas-lista" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;"></div>
           </div>
           <div id="receitas-resumo" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+          </div><!-- /receitas-bloco-body -->
         </div>
 
         <!-- NOVA PARADA -->
@@ -2362,6 +2369,15 @@ function renderMauUsoDash(todas){
     }).join("");
 }
 
+function toggleReceitasBloco(){
+  const body  = document.getElementById("receitas-bloco-body");
+  const arrow = document.getElementById("receitas-bloco-arrow");
+  const open  = body.style.display==="none";
+  body.style.display  = open?"block":"none";
+  arrow.style.transform = open?"rotate(0deg)":"rotate(-90deg)";
+  if(open) renderReceitasResumo();
+}
+
 function toggleReceitasPanel(){
   const p = document.getElementById("receitas-panel");
   const b = document.getElementById("btn-toggle-receitas");
@@ -2410,8 +2426,10 @@ function renderReceitasLista(){
 
 function renderReceitasResumo(){
   const el = document.getElementById("receitas-resumo");
-  if(!el) return;
+  const count = document.getElementById("receitas-bloco-count");
   const lista = DB.receitas||[];
+  if(count) count.textContent = lista.length ? lista.length+" receitas" : "";
+  if(!el) return;
   if(!lista.length){ el.innerHTML=`<span style="font-size:11px;color:var(--muted);">Nenhuma receita — clique em "Gerenciar" para adicionar</span>`; return; }
   el.innerHTML = lista.map(r=>`
     <span style="font-size:10px;padding:2px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--border2);color:var(--text);">
