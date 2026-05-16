@@ -2530,11 +2530,16 @@ function renderReceitasResumo(){
   const lista = DB.receitas||[];
   if(count) count.textContent = lista.length ? lista.length+" receitas" : "";
   if(!el) return;
-  if(!lista.length){ el.innerHTML=`<span style="font-size:11px;color:var(--muted);">Nenhuma receita — clique em "Gerenciar" para adicionar</span>`; return; }
-  el.innerHTML = lista.map(r=>`
-    <span style="font-size:10px;padding:2px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--border2);color:var(--text);">
-      🍳 ${escHtml(r.nome)} <span style="color:${r.tipo==="ciclo"?"#a78bfa":"#60a5fa"}">${r.tipo==="ciclo"?"ciclo":"kg/h"}</span>
-    </span>`).join("");
+  // mostra só o resumo por classe — não lista todas as receitas
+  const classes = {};
+  lista.forEach(r=>{ const c=r.classe||"Sem classe"; classes[c]=(classes[c]||0)+1; });
+  if(!Object.keys(classes).length){
+    el.innerHTML=`<span style="font-size:11px;color:var(--muted);">Nenhuma receita — clique em "Gerenciar" para adicionar</span>`;
+    return;
+  }
+  el.innerHTML = Object.entries(classes).map(([c,n])=>
+    `<span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--bg);border:1px solid #1e3a5f;color:#60a5fa;">📂 ${escHtml(c)} <b>${n}</b></span>`
+  ).join("");
 }
 
 function onNpSetorChange(){
