@@ -612,9 +612,25 @@
           <div id="pd-por-equipamento"></div>
         </div>
 
+
         <!-- LISTA COMPLETA DE PARADAS -->
         <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;">
-          <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;">📋 Todas as Paradas Registradas</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;flex:1;" id="pd-lista-titulo">📋 Todas as Paradas</div>
+            <input id="pd-busca" type="text" placeholder="🔍 Buscar equip., receita, obs..." oninput="renderParadasView()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:11px;outline:none;font-family:inherit;min-width:200px;"/>
+            <select id="pd-motivo-filtro" onchange="renderParadasView()" style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:5px 8px;color:var(--text);font-family:inherit;font-size:11px;outline:none;">
+              <option value="">Todos os motivos</option>
+              <option value="manutencao">🔧 Manutenção</option>
+              <option value="mau_uso">⚠️ Mau Uso</option>
+              <option value="energia">⚡ Energia</option>
+              <option value="limpeza">🧹 Limpeza</option>
+              <option value="insumo">📦 Insumo</option>
+              <option value="falha">🔴 Falha</option>
+              <option value="outro">💬 Outro</option>
+            </select>
+            <button onclick="detectarDuplicatas()" class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:#f43f5e;border-color:#f43f5e40;white-space:nowrap;">🔍 Duplicatas</button>
+          </div>
+          <div id="pd-duplicatas-alert" style="display:none;margin-bottom:10px;"></div>
           <div id="pd-lista-todas"></div>
         </div>
 
@@ -2167,11 +2183,15 @@ async function enviarSlack(ataId){
 // cada parada: { id, setorId, equipNome, kgh, inicio, fim, obs, minutos }
 
 function getKgPerdidos(p){
-  // sempre recalcula proporcional — ignora valor salvo
+  // ciclo: proporcional ao tempo
   if(p.cicloMin>0 && p.cicloKg>0){
     return (p.cicloKg / p.cicloMin) * p.minutos;
   }
-  if(p.kgh>0) return (p.minutos/60)*p.kgh;
+  // kg/h: só usa se tipo for explicitamente kgh E tiver kgh > 0
+  if(p.tipo==="kgh" && p.kgh>0){
+    return (p.minutos/60)*p.kgh;
+  }
+  // sem dados suficientes = 0 (não inventa)
   return 0;
 }
 
@@ -2513,6 +2533,43 @@ function onNpReceitaChange(){
   }
 }
 
+function detectarDuplicatas(){
+  const todas = getTodasParadas();
+  const grupos = {};
+  todas.forEach(p=>{
+    // chave: equipamento + data do inicio
+    const chave = (p.equipNome||"")+"__"+(p.inicio?.slice(0,13)||""); // por hora
+    if(!grupos[chave]) grupos[chave]=[];
+    grupos[chave].push(p);
+  });
+  const duplicatas = Object.values(grupos).filter(g=>g.length>1);
+  const alertEl = document.getElementById("pd-duplicatas-alert");
+  if(!alertEl) return;
+  if(!duplicatas.length){
+    alertEl.style.display="block";
+    alertEl.innerHTML=`<div style="background:#0d2a0d;border:1px solid #22c55e40;border-radius:8px;padding:10px 14px;font-size:12px;color:#22c55e;">✅ Nenhuma parada duplicada encontrada!</div>`;
+    setTimeout(()=>alertEl.style.display="none",3000);
+    return;
+  }
+  let html = `<div style="background:#2a0a0a;border:1px solid #f43f5e40;border-radius:10px;padding:12px;">
+    <div style="font-size:12px;font-weight:700;color:#f43f5e;margin-bottom:10px;">⚠️ ${duplicatas.length} grupo(s) de paradas possivelmente duplicadas:</div>`;
+  duplicatas.forEach(grupo=>{
+    html+=`<div style="background:var(--card);border:1px solid #f43f5e30;border-radius:8px;padding:10px;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:700;color:#f97316;margin-bottom:6px;">⚙️ ${escHtml(grupo[0].equipNome)} — ${fmtDateTime(grupo[0].inicio)}</div>`;
+    grupo.forEach(p=>{
+      html+=`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
+        <span style="flex:1;font-size:11px;color:var(--muted);">${fmtDateTime(p.inicio)} → ${fmtDateTime(p.fim)} (${fmtDuracao2(p.minutos)})</span>
+        <span style="font-size:10px;color:#a78bfa;">${p.receitaNome?'🍳 '+escHtml(p.receitaNome):''}</span>
+        <button onclick="deletarParada('${p.id}','${p.fonte}',${p.demandaId?`'${p.demandaId}'`:'null'})" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 8px;font-family:inherit;">✕ Excluir</button>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  alertEl.style.display="block";
+  alertEl.innerHTML=html;
+}
+
 function registrarParadaDireta(){
   const setorId  = document.getElementById("np-setor").value;
   const equipSel = document.getElementById("np-equipamento");
@@ -2552,6 +2609,25 @@ function registrarParadaDireta(){
     }
   } else {
     kgPerdidos = kgh>0 ? (min/60)*kgh : 0;
+  }
+
+  // verifica duplicata: mesmo equipamento + horário sobrepostos
+  const todasExist = getTodasParadas();
+  const iniNew = new Date(inicio), fimNew = new Date(fim);
+  const duplicata = todasExist.find(p=>{
+    if(p.equipNome!==equipNome) return false;
+    const iniEx = new Date(p.inicio), fimEx = new Date(p.fim);
+    // verifica sobreposição de horário
+    return iniNew < fimEx && fimNew > iniEx;
+  });
+  if(duplicata){
+    const confirmar = confirm(
+      `⚠️ Possível parada duplicada!\n\n`+
+      `Já existe uma parada para "${equipNome}" neste horário:\n`+
+      `${fmtDateTime(duplicata.inicio)} → ${fmtDateTime(duplicata.fim)}\n\n`+
+      `Deseja registrar mesmo assim?`
+    );
+    if(!confirmar) return;
   }
 
   if(!DB.paradasDiretas) DB.paradasDiretas=[];
@@ -2622,7 +2698,19 @@ function renderParadasView(){
   fEquip.value=curFEquip;
   if(curFEquip) todas=todas.filter(p=>p.equipNome===curFEquip);
 
-  const paradasFiltradas=curFData?todas.filter(p=>p.inicio.slice(0,10)===curFData):todas;
+  const paradasFiltradas = todas.filter(p=>{
+    if(curFData && p.inicio.slice(0,10)!==curFData) return false;
+    // filtro busca texto
+    const busca = (document.getElementById("pd-busca")?.value||"").toLowerCase();
+    if(busca){
+      const txt = [p.equipNome,p.receitaNome,p.obs,p.setorNome].join(" ").toLowerCase();
+      if(!txt.includes(busca)) return false;
+    }
+    // filtro motivo
+    const motivo = document.getElementById("pd-motivo-filtro")?.value||"";
+    if(motivo && p.motivo!==motivo) return false;
+    return true;
+  });
   const hoje=new Date(); hoje.setHours(0,0,0,0);
   const hojeStr=hoje.toISOString().slice(0,10);
   const dataResumo=curFData||hojeStr;
@@ -2704,21 +2792,33 @@ function renderParadasView(){
   const pe={};
   paradasFiltradas.forEach(p=>{
     const k=p.equipNome||"Sem equipamento";
-    if(!pe[k]) pe[k]={nome:k,kgh:p.kgh,paradas:0,minutos:0,kg:0};
+    if(!pe[k]) pe[k]={nome:k,paradas:0,minutos:0,kg:0,tipos:new Set()};
     pe[k].paradas++; pe[k].minutos+=p.minutos;
     pe[k].kg+=getKgPerdidos(p);
+    if(p.receitaNome) pe[k].tipos.add(p.receitaNome);
+    else if(p.kgh>0) pe[k].tipos.add(p.kgh+"kg/h");
   });
   const er=Object.values(pe).sort((a,b)=>b.kg-a.kg||b.minutos-a.minutos);
   document.getElementById("pd-por-equipamento").innerHTML=!er.length
     ?'<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">Nenhuma parada no periodo.</div>'
-    :'<div class="equip-row equip-head"><span>Equipamento</span><span style="text-align:right">Paradas</span><span style="text-align:right">Tempo</span><span style="text-align:right">Kg/h</span><span style="text-align:right;color:#ef4444">Kg perdidos</span></div>'
-      +er.map(e=>'<div class="equip-row">'
-        +'<span style="font-weight:600">&#9881; '+escHtml(e.nome)+'</span>'
-        +'<span style="text-align:right;color:#f97316">'+e.paradas+'</span>'
-        +'<span style="text-align:right;color:#f59e0b">'+fmtDuracao2(e.minutos)+'</span>'
-        +'<span style="text-align:right;color:var(--muted)">'+(e.kgh>0?e.kgh+' kg/h':'--')+'</span>'
-        +'<span style="text-align:right;font-weight:700;color:#ef4444">'+(e.kg>0?e.kg.toFixed(1)+' kg':'--')+'</span>'
-        +'</div>').join("");
+    :'<div class="equip-row equip-head"><span>Equipamento</span><span style="text-align:right">Paradas</span><span style="text-align:right">Tempo</span><span style="text-align:right">KG/H</span><span style="text-align:right;color:#ef4444">KG PERDIDOS</span></div>'
+      +er.map(e=>{
+        const tempoSuspeito = e.minutos > 24*60;
+        const kgLabel = e.kg>0 ? e.kg.toFixed(1)+' kg' : '--';
+        const tipoLabel = [...e.tipos].slice(0,1).join(", ")||"--";
+        return '<div class="equip-row" style="'+(tempoSuspeito?"border-left:3px solid #f43f5e;":"")+'">'
+          +'<span style="font-weight:600">&#9881; '+escHtml(e.nome)
+          +(tempoSuspeito?'<br><span style="font-size:9px;color:#f43f5e;background:#2a0a0a;padding:1px 6px;border-radius:10px;">⚠️ tempo suspeito — verifique o registro</span>':'')
+          +'</span>'
+          +'<span style="text-align:right;color:#f97316">'+e.paradas+'</span>'
+          +'<span style="text-align:right;color:'+(tempoSuspeito?"#f43f5e":"#f59e0b")+'">'+fmtDuracao2(e.minutos)+'</span>'
+          +'<span style="text-align:right;color:var(--muted);font-size:10px">'+tipoLabel+'</span>'
+          +'<span style="text-align:right;font-weight:700;color:'+(tempoSuspeito?"#f43f5e":"#ef4444")+'">'
+          +kgLabel
+          +(tempoSuspeito?'<br><span style="font-size:9px;color:#f43f5e;">← corrigir</span>':'')
+          +'</span>'
+          +'</div>';
+      }).join("");
 
   const listaEl=document.getElementById("pd-lista-todas");
   const titulo=curFData?'Paradas de '+dataLabel:'Todas as Paradas';
@@ -2924,9 +3024,12 @@ function onEpReceitaChange(){
   if(!receitaId){ atualizarEpPreview(); return; }
   const receita = (DB.receitas||[]).find(r=>r.id===receitaId);
   if(!receita){ atualizarEpPreview(); return; }
-  if(receita.cicloMin) document.getElementById("ep-ciclo-min").value = receita.cicloMin;
-  if(receita.cicloKg)  document.getElementById("ep-ciclo-kg").value  = receita.cicloKg;
+  // primeiro muda o tipo para mostrar os campos
   setEpTipo("ciclo");
+  // depois preenche com os valores da receita
+  document.getElementById("ep-ciclo-min").value = receita.cicloMin||"";
+  document.getElementById("ep-ciclo-kg").value  = receita.cicloKg||"";
+  // atualiza preview com os novos valores
   atualizarEpPreview();
 }
 
@@ -2977,8 +3080,11 @@ function salvarEditParada(){
   const min = Math.round((f-ini)/60000);
 
   const tipo = editingParadaTipo;
-  const cicloMin = parseFloat(document.getElementById("ep-ciclo-min").value)||0;
-  const cicloKg  = parseFloat(document.getElementById("ep-ciclo-kg").value)||0;
+  // usa campos do modal; se vazios, pega da receita selecionada
+  const cicloMinCampo = parseFloat(document.getElementById("ep-ciclo-min").value)||0;
+  const cicloKgCampo  = parseFloat(document.getElementById("ep-ciclo-kg").value)||0;
+  const cicloMin = cicloMinCampo || receita?.cicloMin || 0;
+  const cicloKg  = cicloKgCampo  || receita?.cicloKg  || 0;
   const kgh      = parseFloat(document.getElementById("ep-kgh").value)||0;
 
   let kgPerdidos = 0;
@@ -2987,6 +3093,11 @@ function salvarEditParada(){
   } else if(kgh>0){
     kgPerdidos = (min/60)*kgh;
   }
+
+  // confirma para o usuário o que será salvo
+  const resumo = tipo==="ciclo" && cicloMin>0 && cicloKg>0
+    ? `${kgPerdidos.toFixed(1)} kg perdidos (${cicloKg}kg ÷ ${cicloMin}min × ${min}min)`
+    : kgh>0 ? `${kgPerdidos.toFixed(1)} kg perdidos (${kgh}kg/h)` : "sem cálculo de kg";
 
   if(editingParadaFonte==="demanda"){
     DB.demandas = DB.demandas.map(d=>{
@@ -3003,6 +3114,8 @@ function salvarEditParada(){
     });
   }
   save(); fecharEditParada(); renderParadasView();
+  // mostra resumo do que foi salvo
+  setTimeout(()=>alert(`✅ Parada atualizada!\n⏱️ ${fmtDuracao2(min)}\n📦 ${resumo}`), 100);
 }
 
 function setFiltroHoje(){
