@@ -2537,8 +2537,8 @@ function detectarDuplicatas(){
   const todas = getTodasParadas();
   const grupos = {};
   todas.forEach(p=>{
-    // chave: equipamento + data do inicio
-    const chave = (p.equipNome||"")+"__"+(p.inicio?.slice(0,13)||""); // por hora
+    // duplicata = mesmo equipamento + mesmo início + mesmo fim
+    const chave = (p.equipNome||"")+"__"+(p.inicio||"")+"__"+(p.fim||"");
     if(!grupos[chave]) grupos[chave]=[];
     grupos[chave].push(p);
   });
@@ -2552,15 +2552,15 @@ function detectarDuplicatas(){
     return;
   }
   let html = `<div style="background:#2a0a0a;border:1px solid #f43f5e40;border-radius:10px;padding:12px;">
-    <div style="font-size:12px;font-weight:700;color:#f43f5e;margin-bottom:10px;">⚠️ ${duplicatas.length} grupo(s) de paradas possivelmente duplicadas:</div>`;
+    <div style="font-size:12px;font-weight:700;color:#f43f5e;margin-bottom:10px;">⚠️ ${duplicatas.length} parada(s) duplicada(s) encontrada(s) — mesmo equipamento, mesma data e horário:</div>`;
   duplicatas.forEach(grupo=>{
     html+=`<div style="background:var(--card);border:1px solid #f43f5e30;border-radius:8px;padding:10px;margin-bottom:8px;">
-      <div style="font-size:11px;font-weight:700;color:#f97316;margin-bottom:6px;">⚙️ ${escHtml(grupo[0].equipNome)} — ${fmtDateTime(grupo[0].inicio)}</div>`;
-    grupo.forEach(p=>{
+      <div style="font-size:11px;font-weight:700;color:#f97316;margin-bottom:6px;">⚙️ ${escHtml(grupo[0].equipNome)} — ${fmtDateTime(grupo[0].inicio)} → ${fmtDateTime(grupo[0].fim)}</div>`;
+    grupo.forEach((p,idx)=>{
       html+=`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
-        <span style="flex:1;font-size:11px;color:var(--muted);">${fmtDateTime(p.inicio)} → ${fmtDateTime(p.fim)} (${fmtDuracao2(p.minutos)})</span>
-        <span style="font-size:10px;color:#a78bfa;">${p.receitaNome?'🍳 '+escHtml(p.receitaNome):''}</span>
-        <button onclick="deletarParada('${p.id}','${p.fonte}',${p.demandaId?`'${p.demandaId}'`:'null'})" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 8px;font-family:inherit;">✕ Excluir</button>
+        <span style="font-size:10px;background:${idx===0?'#0d2a1a':'#2a0a0a'};color:${idx===0?'#22c55e':'#f87171'};padding:1px 7px;border-radius:20px;font-weight:700;">${idx===0?'MANTER':'DUPLICATA'}</span>
+        <span style="flex:1;font-size:11px;color:var(--muted);">${p.receitaNome?'🍳 '+escHtml(p.receitaNome):''} ${p.obs?'· '+escHtml(p.obs):''} <span style="color:var(--sky)">${p.fonte==="demanda"?'📋 '+escHtml(p.demandaTitulo||''):''}</span></span>
+        ${idx>0?`<button onclick="deletarParada('${p.id}','${p.fonte}',${p.demandaId?`'${p.demandaId}'`:'null'});this.closest('div').parentElement.remove();detectarDuplicatas();" style="cursor:pointer;border:none;border-radius:6px;background:#2a0f0f;color:#f87171;font-size:10px;padding:3px 10px;font-family:inherit;font-weight:700;">✕ Excluir duplicata</button>`:''}
       </div>`;
     });
     html+=`</div>`;
@@ -2611,20 +2611,18 @@ function registrarParadaDireta(){
     kgPerdidos = kgh>0 ? (min/60)*kgh : 0;
   }
 
-  // verifica duplicata: mesmo equipamento + horário sobrepostos
+  // verifica duplicata: mesmo equipamento + mesmo início + mesmo fim exatos
   const todasExist = getTodasParadas();
-  const iniNew = new Date(inicio), fimNew = new Date(fim);
-  const duplicata = todasExist.find(p=>{
-    if(p.equipNome!==equipNome) return false;
-    const iniEx = new Date(p.inicio), fimEx = new Date(p.fim);
-    // verifica sobreposição de horário
-    return iniNew < fimEx && fimNew > iniEx;
-  });
+  const duplicata = todasExist.find(p=>
+    p.equipNome===equipNome &&
+    p.inicio===inicio &&
+    p.fim===fim
+  );
   if(duplicata){
     const confirmar = confirm(
-      `⚠️ Possível parada duplicada!\n\n`+
-      `Já existe uma parada para "${equipNome}" neste horário:\n`+
-      `${fmtDateTime(duplicata.inicio)} → ${fmtDateTime(duplicata.fim)}\n\n`+
+      `⚠️ Parada duplicada!\n\n`+
+      `Já existe uma parada para "${equipNome}" com exatamente o mesmo horário:\n`+
+      `${fmtDateTime(inicio)} → ${fmtDateTime(fim)}\n\n`+
       `Deseja registrar mesmo assim?`
     );
     if(!confirmar) return;
