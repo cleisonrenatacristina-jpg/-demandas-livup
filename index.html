@@ -479,16 +479,32 @@
               <button class="btn btn-ghost" onclick="toggleReceitasPanel();event.stopPropagation();" id="btn-toggle-receitas" style="font-size:11px;padding:4px 12px;color:#60a5fa;border-color:#1e3a5f;">+ Gerenciar</button>
             </div>
             <div id="receitas-panel" style="display:none;">
+              <!-- Gerenciar Classes -->
+              <div style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <span style="font-size:11px;font-weight:700;color:#60a5fa;">📂 Classes de Receitas</span>
+                  <div style="flex:1;"></div>
+                  <input id="rec-nova-classe" placeholder="Nova classe..." style="background:var(--card);border:1px solid var(--border2);border-radius:7px;padding:4px 8px;color:var(--text);font-family:inherit;font-size:11px;outline:none;width:140px;"/>
+                  <button onclick="addClasseReceita()" class="btn btn-ghost" style="font-size:10px;padding:3px 10px;color:#60a5fa;border-color:#1e3a5f;">+ Criar</button>
+                </div>
+                <div id="rec-classes-lista" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+              </div>
+              <!-- Adicionar receita -->
               <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-              <input id="rec-nome" placeholder="Nome da receita..." style="flex:1;min-width:160px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
-              <select id="rec-tipo" style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;">
-                <option value="kgh">⚖️ kg/h</option>
-                <option value="ciclo">🔄 Por ciclo</option>
-              </select>
-              <button class="btn btn-primary btn-sm" onclick="addReceita()">+ Adicionar</button>
+                <input id="rec-nome" placeholder="Nome da receita..." style="flex:1;min-width:140px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:13px;outline:none;"/>
+                <select id="rec-classe" style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;min-width:140px;">
+                  <option value="Receitas das Caldeiras">🍳 Receitas das Caldeiras</option>
+                </select>
+                <select id="rec-tipo" style="background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;">
+                  <option value="ciclo">🔄 Por ciclo</option>
+                  <option value="kgh">⚖️ kg/h</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="addReceita()">+ Adicionar</button>
+              </div>
+              <!-- Filtro por classe -->
+              <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;" id="rec-filtro-classes"></div>
+              <div id="receitas-lista" style="display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto;"></div>
             </div>
-            <div id="receitas-lista" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;"></div>
-          </div>
           <div id="receitas-resumo" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
           </div><!-- /receitas-bloco-body -->
         </div>
@@ -957,58 +973,58 @@ const PRIO = {
 const CORES = ["#3b82f6","#f59e0b","#22c55e","#a78bfa","#ef4444","#fb923c","#ec4899","#14b8a6","#e879f9","#84cc16"];
 
 const RECEITAS_LIVUP = [
-  {id:"rec_arroz_integral",nome:"Arroz integral",tipo:"ciclo",cicloMin:90,cicloKg:165.75,caldeira:"Normal"},
-  {id:"rec_feij_o_carioca_cozido",nome:"Feijão carioca cozido",tipo:"ciclo",cicloMin:120,cicloKg:327.13,caldeira:"Autoclavada"},
-  {id:"rec_fundo_de_legumes",nome:"Fundo de Legumes",tipo:"ciclo",cicloMin:180,cicloKg:169.45,caldeira:"Normal"},
-  {id:"rec_fundo_de_legumes__risoto_cap",nome:"Fundo de Legumes (Risoto caprese)",tipo:"ciclo",cicloMin:180,cicloKg:60.87,caldeira:"Normal"},
-  {id:"rec_fs___arroz",nome:"FS - Arroz",tipo:"ciclo",cicloMin:60,cicloKg:381.63,caldeira:"Normal"},
-  {id:"rec_molho_para_estrogonofe",nome:"Molho para Estrogonofe",tipo:"ciclo",cicloMin:120,cicloKg:80.43,caldeira:"Normal"},
-  {id:"rec_feijoada",nome:"Feijoada",tipo:"ciclo",cicloMin:180,cicloKg:689.23,caldeira:"Autoclavada"},
-  {id:"rec_carne_mo_da_cozida",nome:"Carne moída cozida",tipo:"ciclo",cicloMin:120,cicloKg:160.32,caldeira:"Normal"},
-  {id:"rec_pur__de_batata",nome:"Purê de Batata",tipo:"ciclo",cicloMin:120,cicloKg:272.83,caldeira:"Autoclavada"},
-  {id:"rec_molho_sugo",nome:"Molho sugo",tipo:"ciclo",cicloMin:120,cicloKg:2.72,caldeira:"Normal"},
-  {id:"rec_molho_bolonhesa",nome:"Molho bolonhesa",tipo:"ciclo",cicloMin:150,cicloKg:113.12,caldeira:"Normal"},
-  {id:"rec_molho__f395",nome:"Molho (F395)",tipo:"ciclo",cicloMin:90,cicloKg:26.51,caldeira:"Normal"},
-  {id:"rec_base_frango_desfiado",nome:"Base frango desfiado",tipo:"ciclo",cicloMin:90,cicloKg:174.54,caldeira:"Autoclavada"},
-  {id:"rec_feij_o_preto",nome:"Feijão Preto",tipo:"ciclo",cicloMin:120,cicloKg:171.8,caldeira:"Autoclavada"},
-  {id:"rec_carne_temperada_e_cozida",nome:"Carne temperada e cozida",tipo:"ciclo",cicloMin:210,cicloKg:159.93,caldeira:"Autoclavada"},
-  {id:"rec_creme_de_milho",nome:"Creme de milho",tipo:"ciclo",cicloMin:150,cicloKg:283.22,caldeira:"Normal"},
-  {id:"rec_pernil_desfiado_temperado",nome:"Pernil desfiado temperado",tipo:"ciclo",cicloMin:240,cicloKg:43.71,caldeira:"Autoclavada"},
-  {id:"rec_pur__de_ab_bora",nome:"Purê de Abóbora",tipo:"ciclo",cicloMin:150,cicloKg:316.81,caldeira:"Autoclavada"},
-  {id:"rec_base_frango_desfiado_sem_sal",nome:"Base frango desfiado sem sal",tipo:"ciclo",cicloMin:90,cicloKg:136.29,caldeira:"Autoclavada"},
-  {id:"rec_molho_de_tomate_sem_manjeric",nome:"Molho de tomate sem manjericão",tipo:"ciclo",cicloMin:120,cicloKg:0.28,caldeira:"Normal"},
-  {id:"rec_carne_mo_da_com_cenoura_e_va",nome:"Carne moída com cenoura e vagem",tipo:"ciclo",cicloMin:120,cicloKg:15.05,caldeira:"Normal"},
-  {id:"rec_frango_desfiado",nome:"Frango Desfiado",tipo:"ciclo",cicloMin:90,cicloKg:51.96,caldeira:"Autoclavada"},
-  {id:"rec_caldo_verde",nome:"Caldo verde",tipo:"ciclo",cicloMin:150,cicloKg:284.98,caldeira:"Autoclavada"},
-  {id:"rec_creme_de_couve_flor",nome:"Creme de couve-flor",tipo:"ciclo",cicloMin:120,cicloKg:384.76,caldeira:"Autoclavada"},
-  {id:"rec_caldo_para_sopa",nome:"Caldo para sopa",tipo:"ciclo",cicloMin:120,cicloKg:299.88,caldeira:"Normal"},
-  {id:"rec_lagarto_temperado_e_cozido",nome:"Lagarto temperado e cozido",tipo:"ciclo",cicloMin:120,cicloKg:0.0,caldeira:"Autoclavada"},
-  {id:"rec_base_de_pur__de_batata",nome:"Base de purê de batata",tipo:"ciclo",cicloMin:120,cicloKg:272.83,caldeira:"Autoclavada"},
-  {id:"rec_arroz_parboilizado_e_comm",nome:"Arroz Parboilizado E-comm",tipo:"ciclo",cicloMin:120,cicloKg:141.07,caldeira:"Normal"},
-  {id:"rec_fundo_de_legumes__frango_cro",nome:"Fundo de legumes (Frango crosta)",tipo:"ciclo",cicloMin:180,cicloKg:134.39,caldeira:"Normal"},
-  {id:"rec_carne_mo_da__escondidinho",nome:"Carne moída (Escondidinho)",tipo:"ciclo",cicloMin:120,cicloKg:127.09,caldeira:"Normal"},
-  {id:"rec_molho_estrogonofe",nome:"Molho estrogonofe",tipo:"ciclo",cicloMin:120,cicloKg:242.89,caldeira:"Normal"},
-  {id:"rec_lentilha_pomodoro",nome:"Lentilha pomodoro",tipo:"ciclo",cicloMin:120,cicloKg:256.53,caldeira:"Normal"},
-  {id:"rec_molho_para_estrogonofe__cogu",nome:"Molho para Estrogonofe (cogumelo)",tipo:"ciclo",cicloMin:120,cicloKg:330.32,caldeira:"Normal"},
-  {id:"rec_picadinho_de_carne",nome:"Picadinho de carne",tipo:"ciclo",cicloMin:210,cicloKg:10.91,caldeira:"Autoclavada"},
-  {id:"rec_base_frango_desfiado__batata",nome:"Base Frango Desfiado (Batata Doce)",tipo:"ciclo",cicloMin:90,cicloKg:199.06,caldeira:"Autoclavada"},
-  {id:"rec_pur__de_batata_doce",nome:"Purê de Batata Doce",tipo:"ciclo",cicloMin:150,cicloKg:113.72,caldeira:"Autoclavada"},
-  {id:"rec_molho_para_frango",nome:"Molho para Frango",tipo:"ciclo",cicloMin:120,cicloKg:139.25,caldeira:"Normal"},
-  {id:"rec_feijoada_vegetariana",nome:"Feijoada vegetariana",tipo:"ciclo",cicloMin:120,cicloKg:308.69,caldeira:"Autoclavada"},
-  {id:"rec_prote_na_de_soja_com_molho",nome:"Proteína de soja com molho",tipo:"ciclo",cicloMin:120,cicloKg:218.98,caldeira:"Normal"},
-  {id:"rec_prote_na_de_soja",nome:"Proteína de soja",tipo:"ciclo",cicloMin:120,cicloKg:0.0,caldeira:"Normal"},
-  {id:"rec_mix_de_quinoa_com_legumes",nome:"Mix de quinoa com legumes",tipo:"ciclo",cicloMin:90,cicloKg:10.44,caldeira:"Normal"},
-  {id:"rec_arroz_7_gr_os",nome:"Arroz 7 grãos",tipo:"ciclo",cicloMin:90,cicloKg:390.46,caldeira:"Normal"},
-  {id:"rec_carne_de_panela",nome:"Carne de panela",tipo:"ciclo",cicloMin:240,cicloKg:78.83,caldeira:"Autoclavada"},
-  {id:"rec_pur__de_mandioquinha",nome:"Purê de mandioquinha",tipo:"ciclo",cicloMin:60,cicloKg:156.18,caldeira:"Normal"},
-  {id:"rec_bolonhesa_580g",nome:"Bolonhesa 580g",tipo:"ciclo",cicloMin:150,cicloKg:138.34,caldeira:"Normal"},
-  {id:"rec_molho_com_ervilha",nome:"Molho com ervilha",tipo:"ciclo",cicloMin:90,cicloKg:94.46,caldeira:"Normal"},
-  {id:"rec_base_para_pur__de_batata",nome:"Base para purê de batata",tipo:"ciclo",cicloMin:120,cicloKg:230.24,caldeira:"Autoclavada"},
-  {id:"rec_pur__de_batata_com_br_colis",nome:"Purê de batata com brócolis",tipo:"ciclo",cicloMin:120,cicloKg:21.27,caldeira:"Autoclavada"},
-  {id:"rec_molho_branco",nome:"Molho branco",tipo:"ciclo",cicloMin:120,cicloKg:197.83,caldeira:"Normal"},
-  {id:"rec_molho_branco_com_espinafre",nome:"Molho branco com espinafre",tipo:"ciclo",cicloMin:120,cicloKg:235.12,caldeira:"Normal"},
-  {id:"rec_molho_de_tomate__camar_o",nome:"Molho de tomate (camarão)",tipo:"ciclo",cicloMin:120,cicloKg:146.06,caldeira:"Normal"},
-  {id:"rec_molho_estrogonofe__camar_o",nome:"Molho estrogonofe (camarão)",tipo:"ciclo",cicloMin:120,cicloKg:244.15,caldeira:"Normal"},
+  {id:"rec_arroz_integral",nome:"Arroz integral",tipo:"ciclo",cicloMin:90,cicloKg:165.75,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_feij_o_carioca_cozido",nome:"Feijão carioca cozido",tipo:"ciclo",cicloMin:120,cicloKg:327.13,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_fundo_de_legumes",nome:"Fundo de Legumes",tipo:"ciclo",cicloMin:180,cicloKg:169.45,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_fundo_de_legumes__risoto_cap",nome:"Fundo de Legumes (Risoto caprese)",tipo:"ciclo",cicloMin:180,cicloKg:60.87,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_fs___arroz",nome:"FS - Arroz",tipo:"ciclo",cicloMin:60,cicloKg:381.63,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_para_estrogonofe",nome:"Molho para Estrogonofe",tipo:"ciclo",cicloMin:120,cicloKg:80.43,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_feijoada",nome:"Feijoada",tipo:"ciclo",cicloMin:180,cicloKg:689.23,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_carne_mo_da_cozida",nome:"Carne moída cozida",tipo:"ciclo",cicloMin:120,cicloKg:160.32,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_pur__de_batata",nome:"Purê de Batata",tipo:"ciclo",cicloMin:120,cicloKg:272.83,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_sugo",nome:"Molho sugo",tipo:"ciclo",cicloMin:120,cicloKg:2.72,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_bolonhesa",nome:"Molho bolonhesa",tipo:"ciclo",cicloMin:150,cicloKg:113.12,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho__f395",nome:"Molho (F395)",tipo:"ciclo",cicloMin:90,cicloKg:26.51,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_base_frango_desfiado",nome:"Base frango desfiado",tipo:"ciclo",cicloMin:90,cicloKg:174.54,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_feij_o_preto",nome:"Feijão Preto",tipo:"ciclo",cicloMin:120,cicloKg:171.8,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_carne_temperada_e_cozida",nome:"Carne temperada e cozida",tipo:"ciclo",cicloMin:210,cicloKg:159.93,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_creme_de_milho",nome:"Creme de milho",tipo:"ciclo",cicloMin:150,cicloKg:283.22,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_pernil_desfiado_temperado",nome:"Pernil desfiado temperado",tipo:"ciclo",cicloMin:240,cicloKg:43.71,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_pur__de_ab_bora",nome:"Purê de Abóbora",tipo:"ciclo",cicloMin:150,cicloKg:316.81,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_base_frango_desfiado_sem_sal",nome:"Base frango desfiado sem sal",tipo:"ciclo",cicloMin:90,cicloKg:136.29,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_de_tomate_sem_manjeric",nome:"Molho de tomate sem manjericão",tipo:"ciclo",cicloMin:120,cicloKg:0.28,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_carne_mo_da_com_cenoura_e_va",nome:"Carne moída com cenoura e vagem",tipo:"ciclo",cicloMin:120,cicloKg:15.05,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_frango_desfiado",nome:"Frango Desfiado",tipo:"ciclo",cicloMin:90,cicloKg:51.96,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_caldo_verde",nome:"Caldo verde",tipo:"ciclo",cicloMin:150,cicloKg:284.98,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_creme_de_couve_flor",nome:"Creme de couve-flor",tipo:"ciclo",cicloMin:120,cicloKg:384.76,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_caldo_para_sopa",nome:"Caldo para sopa",tipo:"ciclo",cicloMin:120,cicloKg:299.88,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_lagarto_temperado_e_cozido",nome:"Lagarto temperado e cozido",tipo:"ciclo",cicloMin:120,cicloKg:0.0,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_base_de_pur__de_batata",nome:"Base de purê de batata",tipo:"ciclo",cicloMin:120,cicloKg:272.83,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_arroz_parboilizado_e_comm",nome:"Arroz Parboilizado E-comm",tipo:"ciclo",cicloMin:120,cicloKg:141.07,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_fundo_de_legumes__frango_cro",nome:"Fundo de legumes (Frango crosta)",tipo:"ciclo",cicloMin:180,cicloKg:134.39,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_carne_mo_da__escondidinho",nome:"Carne moída (Escondidinho)",tipo:"ciclo",cicloMin:120,cicloKg:127.09,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_estrogonofe",nome:"Molho estrogonofe",tipo:"ciclo",cicloMin:120,cicloKg:242.89,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_lentilha_pomodoro",nome:"Lentilha pomodoro",tipo:"ciclo",cicloMin:120,cicloKg:256.53,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_para_estrogonofe__cogu",nome:"Molho para Estrogonofe (cogumelo)",tipo:"ciclo",cicloMin:120,cicloKg:330.32,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_picadinho_de_carne",nome:"Picadinho de carne",tipo:"ciclo",cicloMin:210,cicloKg:10.91,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_base_frango_desfiado__batata",nome:"Base Frango Desfiado (Batata Doce)",tipo:"ciclo",cicloMin:90,cicloKg:199.06,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_pur__de_batata_doce",nome:"Purê de Batata Doce",tipo:"ciclo",cicloMin:150,cicloKg:113.72,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_para_frango",nome:"Molho para Frango",tipo:"ciclo",cicloMin:120,cicloKg:139.25,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_feijoada_vegetariana",nome:"Feijoada vegetariana",tipo:"ciclo",cicloMin:120,cicloKg:308.69,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_prote_na_de_soja_com_molho",nome:"Proteína de soja com molho",tipo:"ciclo",cicloMin:120,cicloKg:218.98,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_prote_na_de_soja",nome:"Proteína de soja",tipo:"ciclo",cicloMin:120,cicloKg:0.0,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_mix_de_quinoa_com_legumes",nome:"Mix de quinoa com legumes",tipo:"ciclo",cicloMin:90,cicloKg:10.44,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_arroz_7_gr_os",nome:"Arroz 7 grãos",tipo:"ciclo",cicloMin:90,cicloKg:390.46,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_carne_de_panela",nome:"Carne de panela",tipo:"ciclo",cicloMin:240,cicloKg:78.83,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_pur__de_mandioquinha",nome:"Purê de mandioquinha",tipo:"ciclo",cicloMin:60,cicloKg:156.18,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_bolonhesa_580g",nome:"Bolonhesa 580g",tipo:"ciclo",cicloMin:150,cicloKg:138.34,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_com_ervilha",nome:"Molho com ervilha",tipo:"ciclo",cicloMin:90,cicloKg:94.46,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_base_para_pur__de_batata",nome:"Base para purê de batata",tipo:"ciclo",cicloMin:120,cicloKg:230.24,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_pur__de_batata_com_br_colis",nome:"Purê de batata com brócolis",tipo:"ciclo",cicloMin:120,cicloKg:21.27,caldeira:"Autoclavada",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_branco",nome:"Molho branco",tipo:"ciclo",cicloMin:120,cicloKg:197.83,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_branco_com_espinafre",nome:"Molho branco com espinafre",tipo:"ciclo",cicloMin:120,cicloKg:235.12,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_de_tomate__camar_o",nome:"Molho de tomate (camarão)",tipo:"ciclo",cicloMin:120,cicloKg:146.06,caldeira:"Normal",classe:"Receitas das Caldeiras"},
+  {id:"rec_molho_estrogonofe__camar_o",nome:"Molho estrogonofe (camarão)",tipo:"ciclo",cicloMin:120,cicloKg:244.15,caldeira:"Normal",classe:"Receitas das Caldeiras"},
 ];
 
 const INITIAL = {
@@ -2377,48 +2393,120 @@ function toggleReceitasBloco(){
 }
 
 function toggleReceitasPanel(){
-  const p = document.getElementById("receitas-panel");
-  const b = document.getElementById("btn-toggle-receitas");
-  const show = p.style.display==="none";
-  p.style.display = show?"block":"none";
-  b.textContent = show?"✕ Fechar":"+ Gerenciar Receitas";
-  if(show) renderReceitasLista();
+  const p=document.getElementById("receitas-panel");
+  const b=document.getElementById("btn-toggle-receitas");
+  const show=p.style.display==="none";
+  p.style.display=show?"block":"none";
+  b.textContent=show?"✕ Fechar":"+ Gerenciar";
+  if(show){
+    renderClassesLista();
+    atualizarSelectClasses();
+    renderReceitasLista();
+  }
+}
+
+// ── CLASSES DE RECEITAS ──────────────────────────────────────────
+function getClasses(){
+  const fixas=["Receitas das Caldeiras"];
+  const custom=JSON.parse(localStorage.getItem("df-rec-classes")||"[]");
+  return [...new Set([...fixas,...custom])];
+}
+function salvarClasseCustom(nome){
+  const custom=JSON.parse(localStorage.getItem("df-rec-classes")||"[]");
+  if(!custom.includes(nome)){custom.push(nome);localStorage.setItem("df-rec-classes",JSON.stringify(custom));}
+}
+function excluirClasseCustom(nome){
+  let c=JSON.parse(localStorage.getItem("df-rec-classes")||"[]");
+  localStorage.setItem("df-rec-classes",JSON.stringify(c.filter(x=>x!==nome)));
+}
+function addClasseReceita(){
+  const inp=document.getElementById("rec-nova-classe");
+  const nome=inp.value.trim();
+  if(!nome)return;
+  if(getClasses().includes(nome))return alert("Classe já existe!");
+  salvarClasseCustom(nome);
+  inp.value="";
+  renderClassesLista();
+  atualizarSelectClasses();
+}
+function excluirClasse(nome){
+  if(!confirm(`Excluir a classe "${nome}"?\nAs receitas dela ficarão sem classe.`))return;
+  excluirClasseCustom(nome);
+  DB.receitas=(DB.receitas||[]).map(r=>r.classe===nome?{...r,classe:""}:r);
+  save();renderClassesLista();atualizarSelectClasses();renderReceitasLista();
+}
+function atualizarSelectClasses(){
+  const sel=document.getElementById("rec-classe");
+  if(!sel)return;
+  const classes=getClasses();
+  sel.innerHTML=classes.map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join("");
+  renderFiltroClasses();
+}
+let recFiltroClasse="";
+function renderFiltroClasses(){
+  const el=document.getElementById("rec-filtro-classes");
+  if(!el)return;
+  el.innerHTML=["",...getClasses()].map(c=>`
+    <button onclick="recFiltroClasse='${escHtml(c)}';renderReceitasLista();renderFiltroClasses();" style="padding:3px 10px;border-radius:20px;border:1px solid ${recFiltroClasse===c?'#60a5fa':'var(--border2)'};background:${recFiltroClasse===c?'#1e3a5f':'transparent'};color:${recFiltroClasse===c?'#60a5fa':'var(--muted)'};font-size:10px;cursor:pointer;font-family:inherit;">
+      ${c||"Todas"}
+    </button>`).join("");
+}
+function renderClassesLista(){
+  const el=document.getElementById("rec-classes-lista");
+  if(!el)return;
+  const fixas=["Receitas das Caldeiras"];
+  el.innerHTML=getClasses().map(c=>{
+    const count=(DB.receitas||[]).filter(r=>r.classe===c).length;
+    const isFixa=fixas.includes(c);
+    return `<div style="display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid ${isFixa?'#60a5fa30':'var(--border2)'};border-radius:20px;padding:3px 10px;">
+      <span style="font-size:11px;color:${isFixa?'#60a5fa':'var(--text)'};">📂 ${escHtml(c)} <span style="color:var(--muted);font-size:9px;">(${count})</span></span>
+      ${!isFixa?`<button onclick="excluirClasse('${escHtml(c)}')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:11px;padding:0 2px;line-height:1;">✕</button>`:''}
+    </div>`;
+  }).join("");
 }
 
 function addReceita(){
-  const nome = document.getElementById("rec-nome").value.trim();
-  const tipo = document.getElementById("rec-tipo").value;
-  if(!nome) return alert("Informe o nome da receita.");
-  if(!DB.receitas) DB.receitas=[];
-  if(DB.receitas.find(r=>r.nome.toLowerCase()===nome.toLowerCase())) return alert("Já existe uma receita com esse nome.");
-  DB.receitas.push({id:uid(), nome, tipo});
+  const nome=document.getElementById("rec-nome").value.trim();
+  const tipo=document.getElementById("rec-tipo").value;
+  const classe=document.getElementById("rec-classe")?.value||"Receitas das Caldeiras";
+  if(!nome)return alert("Informe o nome da receita.");
+  if(!DB.receitas)DB.receitas=[];
+  if(DB.receitas.find(r=>r.nome.toLowerCase()===nome.toLowerCase()))return alert("Já existe uma receita com esse nome.");
+  DB.receitas.push({id:uid(),nome,tipo,classe});
   save();
   document.getElementById("rec-nome").value="";
-  renderReceitasLista();
-  renderReceitasResumo();
-  atualizarNpReceitas();
+  renderReceitasLista();renderReceitasResumo();atualizarNpReceitas();
 }
 
 function deleteReceita(id){
-  if(!confirm("Remover esta receita?")) return;
-  DB.receitas = (DB.receitas||[]).filter(r=>r.id!==id);
-  save();
-  renderReceitasLista();
-  renderReceitasResumo();
-  atualizarNpReceitas();
+  if(!confirm("Remover esta receita?"))return;
+  DB.receitas=(DB.receitas||[]).filter(r=>r.id!==id);
+  save();renderReceitasLista();renderReceitasResumo();atualizarNpReceitas();
 }
 
 function renderReceitasLista(){
-  const el = document.getElementById("receitas-lista");
-  if(!el) return;
-  const lista = DB.receitas||[];
-  if(!lista.length){ el.innerHTML=`<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">Nenhuma receita cadastrada ainda.</div>`; return; }
-  el.innerHTML = lista.map(r=>`
-    <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;">
-      <span style="font-size:12px;">🍳</span>
-      <span style="flex:1;font-size:12px;font-weight:600;">${escHtml(r.nome)}</span>
-      <span style="font-size:10px;padding:1px 7px;border-radius:20px;background:${r.tipo==="ciclo"?"#1a0d2a":"#0d1a2a"};color:${r.tipo==="ciclo"?"#a78bfa":"#60a5fa"};font-weight:700;">${r.tipo==="ciclo"?"🔄 Ciclo":"⚖️ kg/h"}</span>
-      <button onclick="deleteReceita('${r.id}')" style="cursor:pointer;border:none;border-radius:5px;background:#2a0f0f;color:#f87171;font-size:10px;font-weight:700;padding:2px 7px;font-family:inherit;">✕</button>
+  const el=document.getElementById("receitas-lista");
+  if(!el)return;
+  let lista=DB.receitas||[];
+  if(recFiltroClasse) lista=lista.filter(r=>r.classe===recFiltroClasse);
+  if(!lista.length){
+    el.innerHTML=`<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">Nenhuma receita${recFiltroClasse?' nesta classe':''} cadastrada ainda.</div>`;
+    return;
+  }
+  // agrupa por classe
+  const grupos={};
+  lista.forEach(r=>{const c=r.classe||"Sem classe";if(!grupos[c])grupos[c]=[];grupos[c].push(r);});
+  el.innerHTML=Object.entries(grupos).map(([classe,recs])=>`
+    <div style="margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:.5px;padding:3px 6px;border-bottom:1px solid #1e3a5f;margin-bottom:4px;">📂 ${escHtml(classe)} (${recs.length})</div>
+      ${recs.map(r=>`
+        <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;margin-bottom:3px;">
+          <span style="flex:1;font-size:12px;font-weight:600;">🍳 ${escHtml(r.nome)}</span>
+          ${r.cicloMin?`<span style="font-size:9px;color:var(--muted);">⏱️${r.cicloMin}min</span>`:''}
+          ${r.cicloKg?`<span style="font-size:9px;color:var(--muted);">📦${r.cicloKg}kg</span>`:''}
+          <span style="font-size:9px;padding:1px 6px;border-radius:20px;background:${r.tipo==="ciclo"?"#1a0d2a":"#0d1a2a"};color:${r.tipo==="ciclo"?"#a78bfa":"#60a5fa"};">${r.tipo==="ciclo"?"🔄":"⚖️"}</span>
+          <button onclick="deleteReceita('${r.id}')" style="cursor:pointer;border:none;border-radius:5px;background:#2a0f0f;color:#f87171;font-size:10px;padding:2px 7px;font-family:inherit;">✕</button>
+        </div>`).join("")}
     </div>`).join("");
 }
 
