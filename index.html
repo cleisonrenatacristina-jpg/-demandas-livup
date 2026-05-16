@@ -1049,6 +1049,8 @@ let DB = (() => {
       const idsLivup = new Set(RECEITAS_LIVUP.map(r=>r.id));
       const custom = (saved.receitas||[]).filter(r=>!idsLivup.has(r.id));
       saved.receitas = [...RECEITAS_LIVUP, ...custom];
+      // garante que todas têm classe
+      saved.receitas = saved.receitas.map(r=>({...r, classe: r.classe||"Receitas das Caldeiras"}));
       return saved;
     }
     return INITIAL;
@@ -2392,6 +2394,14 @@ function toggleReceitasBloco(){
   if(open) renderReceitasResumo();
 }
 
+function transferirClasse(id, novaClasse){
+  if(!novaClasse) return;
+  DB.receitas = (DB.receitas||[]).map(r=>r.id===id?{...r,classe:novaClasse}:r);
+  save();
+  renderReceitasLista();
+  renderClassesLista();
+}
+
 function toggleReceitasPanel(){
   const p=document.getElementById("receitas-panel");
   const b=document.getElementById("btn-toggle-receitas");
@@ -2505,6 +2515,10 @@ function renderReceitasLista(){
           ${r.cicloMin?`<span style="font-size:9px;color:var(--muted);">⏱️${r.cicloMin}min</span>`:''}
           ${r.cicloKg?`<span style="font-size:9px;color:var(--muted);">📦${r.cicloKg}kg</span>`:''}
           <span style="font-size:9px;padding:1px 6px;border-radius:20px;background:${r.tipo==="ciclo"?"#1a0d2a":"#0d1a2a"};color:${r.tipo==="ciclo"?"#a78bfa":"#60a5fa"};">${r.tipo==="ciclo"?"🔄":"⚖️"}</span>
+          <select onchange="transferirClasse('${r.id}',this.value);this.value=''" style="background:var(--card);border:1px solid var(--border2);border-radius:6px;padding:2px 6px;color:var(--muted);font-family:inherit;font-size:10px;outline:none;max-width:130px;" title="Transferir para outra classe">
+            <option value="">↔️ Mover para...</option>
+            ${getClasses().filter(c=>c!==classe).map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join("")}
+          </select>
           <button onclick="deleteReceita('${r.id}')" style="cursor:pointer;border:none;border-radius:5px;background:#2a0f0f;color:#f87171;font-size:10px;padding:2px 7px;font-family:inherit;">✕</button>
         </div>`).join("")}
     </div>`).join("");
