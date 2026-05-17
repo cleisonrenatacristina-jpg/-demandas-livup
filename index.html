@@ -2866,11 +2866,12 @@ function renderParadasView(){
   }
 
   resumoDiv.innerHTML='<div style="background:#1a0d00;border:1px solid #f9731640;border-radius:12px;padding:16px;">'
-    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">'
     +'<span style="font-size:14px;font-weight:700;color:#f97316;">&#128203; Resumo do Dia &mdash; '+dataLabel+'</span>'
     +(dataResumo===hojeStr?'<span style="background:#f9731620;color:#f97316;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid #f9731640">HOJE</span>':'')
     +'<div class="flex1"></div>'
-    +'<button onclick="enviarResumoWa(\''+dataResumo+'\')" style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;border:none;background:#25d366;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">📲 Enviar no WhatsApp</button>'
+    +'<button onclick="enviarResumoWa(\''+dataResumo+'\')" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:none;background:#25d366;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">📲 WhatsApp</button>'
+    +'<button onclick="enviarRelatorioSlack(\''+dataResumo+'\')" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:none;background:#4a154b;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg> Slack</button>'
     +navHtml+'</div>'+rBody+'</div>';
 
   const totalMin=paradasFiltradas.reduce((a,p)=>a+p.minutos,0);
@@ -2960,66 +2961,90 @@ function renderParadasView(){
       }).join("");
 }
 
-function enviarResumoWa(dataStr){
+function montarRelatorio(dataStr){
   const pts=dataStr.split("-");
   const dataLabel=pts[2]+"/"+pts[1]+"/"+pts[0];
-
-  // paradas do dia
   const todasP=getTodasParadas();
   const paradaDia=todasP.filter(p=>p.inicio.slice(0,10)===dataStr);
   const minTotal=paradaDia.reduce((a,p)=>a+p.minutos,0);
   const kgTotal=paradaDia.reduce((a,p)=>a+getKgPerdidos(p),0);
-
-  // por equipamento
-  const porEquip={};
+  const equipamentos=new Set(paradaDia.map(p=>p.equipNome).filter(Boolean)).size;
+  const cats={};
   paradaDia.forEach(p=>{
-    const k=p.equipNome||"Sem equipamento";
-    if(!porEquip[k]) porEquip[k]={nome:k,n:0,min:0,kg:0,ciclos:0,tipo:p.tipo||"kgh",cicloMin:p.cicloMin||0,cicloKg:p.cicloKg||0};
-    porEquip[k].n++;
-    porEquip[k].min+=p.minutos;
-    porEquip[k].kg+=getKgPerdidos(p);
-    if(p.tipo==="ciclo"&&p.cicloMin>0) porEquip[k].ciclos+=Math.floor(p.minutos/p.cicloMin);
+    const m=p.motivo||"sem_motivo";
+    if(!cats[m]) cats[m]={paradas:0,min:0,kg:0,equips:new Set()};
+    cats[m].paradas++; cats[m].min+=p.minutos; cats[m].kg+=getKgPerdidos(p);
+    if(p.equipNome) cats[m].equips.add(p.equipNome);
   });
-  const equipRows=Object.values(porEquip).sort((a,b)=>b.kg-a.kg);
-
-  // tarefas do dia (criadas ou com prazo hoje)
   const tarefasDia=DB.demandas.filter(d=>d.dataEntrega===dataStr||d.criadoEm?.slice(0,10)===dataStr);
+  const conc=tarefasDia.filter(t=>t.status==="concluido").length;
+  return {dataLabel,paradaDia,minTotal,kgTotal,equipamentos,cats,tarefasDia,conc};
+}
 
-  // monta mensagem
-  let msg="⏱️ *Relatório de Paradas — "+dataLabel+"*\n\n";
+const MOTIVO_EMOJI={manutencao:"🔧",mau_uso:"⚠️",energia:"⚡",limpeza:"🧹",insumo:"📦",falha:"🔴",outro:"💬",sem_motivo:"❓"};
+const MOTIVO_NOME={manutencao:"Manutenção",mau_uso:"Mau Uso",energia:"Falta de Energia",limpeza:"Limpeza",insumo:"Falta de Insumo",falha:"Falha de Equipamento",outro:"Outro",sem_motivo:"Sem categoria"};
 
+function enviarResumoWa(dataStr){
+  const {dataLabel,paradaDia,minTotal,kgTotal,equipamentos,cats,tarefasDia,conc}=montarRelatorio(dataStr);
+  let msg=`📊 *Relatório de Paradas — ${dataLabel}*\n\n`;
   if(!paradaDia.length){
     msg+="✅ Nenhuma parada registrada neste dia!\n";
   } else {
-    msg+="📊 *Resumo:*\n";
-    msg+="• Paradas: *"+paradaDia.length+"*\n";
-    msg+="• Tempo total parado: *"+fmtDuracao2(minTotal)+"*\n";
-    if(kgTotal>0) msg+="• Total perdido: *"+kgTotal.toFixed(1)+" kg*\n";
-    msg+="\n⚙️ *Por equipamento:*\n";
-    equipRows.forEach(e=>{
-      msg+="🔧 "+e.nome+"\n";
-      msg+="   ↳ "+e.n+" parada"+(e.n>1?"s":"")+" · "+fmtDuracao2(e.min);
-      if(e.tipo==="ciclo"&&e.ciclos>0) msg+=" · "+e.ciclos+" ciclo"+(e.ciclos>1?"s":"")+" perdido"+(e.ciclos>1?"s":"");
-      if(e.kg>0) msg+=" · *-"+e.kg.toFixed(1)+" kg*";
-      msg+="\n";
-    });
+    msg+=`📌 *Resumo Geral:*\n`;
+    msg+=`• Máquinas paradas: *${equipamentos}*\n`;
+    msg+=`• Total de paradas: *${paradaDia.length}*\n`;
+    msg+=`• Tempo total: *${fmtDuracao2(minTotal)}*\n`;
+    if(kgTotal>0) msg+=`• Kg perdidos total: *${kgTotal.toFixed(1)} kg*\n`;
+    if(cats.mau_uso){
+      const c=cats.mau_uso;
+      msg+=`\n⚠️ *MAU USO (destaque):*\n`;
+      msg+=`• Ocorrências: *${c.paradas}* · Tempo: *${fmtDuracao2(c.min)}*\n`;
+      if(c.kg>0) msg+=`• Kg perdidos: *${c.kg.toFixed(1)} kg*\n`;
+      msg+=`• Equipamentos: ${[...c.equips].join(", ")}\n`;
+    }
+    const outras=Object.entries(cats).filter(([k])=>k!=="mau_uso");
+    if(outras.length){
+      msg+=`\n📋 *Por categoria:*\n`;
+      outras.forEach(([k,c])=>{
+        msg+=`${MOTIVO_EMOJI[k]||"•"} ${MOTIVO_NOME[k]||k}: ${c.paradas} parada(s) · ${fmtDuracao2(c.min)}${c.kg>0?" · -"+c.kg.toFixed(1)+"kg":""}\n`;
+      });
+    }
   }
+  if(tarefasDia.length) msg+=`\n✅ *Tarefas: ${conc}/${tarefasDia.length} concluídas*\n`;
+  msg+=`\n_DemandaFlow LivUp_ 🚀`;
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+}
 
-  if(tarefasDia.length){
-    msg+="\n📋 *Tarefas do dia ("+tarefasDia.length+"):*\n";
-    tarefasDia.slice(0,10).forEach(t=>{
-      const st=STATUS[t.status];
-      const done=t.status==="concluido";
-      msg+=(done?"✅":"⏳")+" "+t.titulo+(t.responsavel?" — "+t.responsavel:"")+" ["+( st?.label||t.status)+"]\n";
-    });
-    const concluidas=tarefasDia.filter(t=>t.status==="concluido").length;
-    msg+="\n*"+concluidas+"/"+tarefasDia.length+" tarefas concluídas*\n";
+async function enviarRelatorioSlack(dataStr){
+  const webhook=getSlackWebhook();
+  if(!webhook){ const ok=confirm("Webhook do Slack não configurado.\nConfigurar agora?"); if(ok) abrirConfigSlack(); return; }
+  const {dataLabel,paradaDia,minTotal,kgTotal,equipamentos,cats,tarefasDia,conc}=montarRelatorio(dataStr);
+  const blocks=[{type:"header",text:{type:"plain_text",text:`📊 Relatório de Paradas — ${dataLabel}`,emoji:true}}];
+  if(!paradaDia.length){
+    blocks.push({type:"section",text:{type:"mrkdwn",text:"✅ *Nenhuma parada registrada neste dia!*"}});
+  } else {
+    blocks.push({type:"section",fields:[
+      {type:"mrkdwn",text:`⚙️ *Máquinas paradas:*\n${equipamentos}`},
+      {type:"mrkdwn",text:`🔢 *Total paradas:*\n${paradaDia.length}`},
+      {type:"mrkdwn",text:`⏱️ *Tempo total:*\n${fmtDuracao2(minTotal)}`},
+      {type:"mrkdwn",text:`📦 *Kg perdidos:*\n${kgTotal>0?kgTotal.toFixed(1)+" kg":"--"}`},
+    ]},{type:"divider"});
+    if(cats.mau_uso){
+      const c=cats.mau_uso;
+      blocks.push({type:"section",text:{type:"mrkdwn",
+        text:`⚠️ *MAU USO — Destaque:*\n• ${c.paradas} ocorrência(s) · ${fmtDuracao2(c.min)}${c.kg>0?" · -"+c.kg.toFixed(1)+"kg":""}\n• Equipamentos: ${[...c.equips].join(", ")}`
+      }},{type:"divider"});
+    }
+    const linhas=Object.entries(cats).filter(([k])=>k!=="mau_uso")
+      .map(([k,c])=>`${MOTIVO_EMOJI[k]||"•"} *${MOTIVO_NOME[k]||k}:* ${c.paradas} parada(s) · ${fmtDuracao2(c.min)}${c.kg>0?" · -"+c.kg.toFixed(1)+"kg":""}`).join("\n");
+    if(linhas) blocks.push({type:"section",text:{type:"mrkdwn",text:`📋 *Por categoria:*\n${linhas}`}});
   }
-
-  msg+="\n_Enviado pelo DemandaFlow LivUp_ 🚀";
-
-  const url="https://wa.me/?text="+encodeURIComponent(msg);
-  window.open(url,"_blank");
+  if(tarefasDia.length){ blocks.push({type:"divider"},{type:"section",text:{type:"mrkdwn",text:`✅ *Tarefas: ${conc}/${tarefasDia.length} concluídas*`}}); }
+  blocks.push({type:"context",elements:[{type:"mrkdwn",text:"_DemandaFlow LivUp_ 🚀"}]});
+  try{
+    const resp=await fetch(webhook,{method:"POST",body:JSON.stringify({text:`Relatório de Paradas — ${dataLabel}`,blocks})});
+    if(resp.ok) alert("✅ Relatório enviado no Slack!"); else alert("❌ Erro ao enviar. Verifique o Webhook.");
+  }catch(e){ alert("❌ Erro: "+e.message); }
 }
 
 function irParaHoje(){
