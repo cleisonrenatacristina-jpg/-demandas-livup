@@ -3613,6 +3613,70 @@ updateApiKeyBtn();
   if(ini) ini.value = iso;
   if(fim) fim.value = iso;
 })();
+
+// ════════════════════════════════════════════════════════════════════
+// SINCRONIZAÇÃO V1 → DEMANDA FLOW
+// Busca demandas do Apps Script e adiciona no Kanban automaticamente
+// ════════════════════════════════════════════════════════════════════
+const DEMANDA_FLOW_API = 'https://script.google.com/macros/s/AKfycbxi2F3c-fM61-JSX0qD5hKGcMq9qZ7PNm-mLr7C4t83IYF1-q1rTc4GD4oPhf8e8_YHKQ/exec';
+
+async function sincronizarDemandasV1() {
+  try {
+    const resp = await fetch(DEMANDA_FLOW_API + '?acao=listar');
+    const lista = await resp.json();
+    if (!Array.isArray(lista) || !lista.length) return;
+
+    let novas = 0;
+    lista.forEach(function(d) {
+      const id = String(d.ID || d.id || '');
+      if (!id) return;
+      // pula se já existe
+      if (DB.demandas.find(function(x) { return x.id === id; })) return;
+
+      // busca ou cria setor
+      let setorId = '';
+      const setorNome = String(d.Setor || d.setor || '');
+      if (setorNome) {
+        let setor = DB.setores.find(function(s) { return s.nome === setorNome; });
+        if (!setor) {
+          setor = { id: uid(), nome: setorNome, cor: '#e8275a', descricao: 'Importado do V1', equipamentos: [] };
+          DB.setores.push(setor);
+        }
+        setorId = setor.id;
+      }
+
+      DB.demandas.push({
+        id: id,
+        titulo: String(d.Titulo || d.titulo || ''),
+        descricao: String(d.Descricao || d.descricao || ''),
+        setorId: setorId,
+        equipamento: String(d.Equipamento || d.equipamento || ''),
+        prioridade: String(d.Prioridade || d.prioridade || 'alta'),
+        status: String(d.Status || d.status || 'aguardando'),
+        origem: String(d.Origem || d.origem || 'V1'),
+        responsavel: String(d.Responsavel || d.responsavel || ''),
+        dataEntrega: String(d.DataEntrega || d.dataEntrega || ''),
+        criadoEm: String(d.CriadoEm || d.criadoEm || new Date().toISOString()),
+        os: String(d.OS || d.os || ''),
+        fonte: 'V1',
+        paradas: [],
+        anexos: [],
+      });
+      novas++;
+    });
+
+    if (novas > 0) {
+      save();
+      render();
+      console.log('Sincronizadas ' + novas + ' demanda(s) do V1!');
+    }
+  } catch(e) {
+    console.log('Sync V1 erro:', e.message);
+  }
+}
+
+// Roda ao abrir o app
+sincronizarDemandasV1();
 </script>
 <!-- MODAL EDITAR PARADA -->
 <div id="modal-edit-parada" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)fecharEditParada()">
