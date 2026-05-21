@@ -949,7 +949,7 @@
   </div>
 </div>
 
-<script>
+<script charset="utf-8">
 // ════════════════════════════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════════════════════════════
@@ -3620,68 +3620,93 @@ updateApiKeyBtn();
 // ════════════════════════════════════════════════════════════════════
 const DEMANDA_FLOW_API = 'https://script.google.com/macros/s/AKfycbxi2F3c-fM61-JSX0qD5hKGcMq9qZ7PNm-mLr7C4t83IYF1-q1rTc4GD4oPhf8e8_YHKQ/exec';
 
+// ID da planilha Demandas LivUp
+const SHEET_ID = '1SFxqM2GfkMPXlEmwvD8Lav1eyQ8FgXAVj7gZR18ek1E';
+// gid da aba Demandas (0 = primeira aba)
+const SHEET_GID = '509498813';
+
+// Sync V1: lê via Google Sheets JSON API (sem CORS)
 function sincronizarDemandasV1() {
-  // Usa JSONP para bypassar CORS do Apps Script
-  const callbackName = 'dfCallback_' + Date.now();
+  const callbackName = 'gsCallback_' + Date.now();
   const script = document.createElement('script');
 
-  window[callbackName] = function(lista) {
-    delete window[callbackName];
-    document.body.removeChild(script);
+  window[callbackName] = function(data) {
+    try {
+      delete window[callbackName];
+      document.body.removeChild(script);
 
-    if (!Array.isArray(lista) || !lista.length) return;
+      const rows = data.table.rows;
+      const cols = data.table.cols;
+      if (!rows || !rows.length) return;
 
-    let novas = 0;
-    lista.forEach(function(d) {
-      const id = String(d.ID || d.id || '');
-      if (!id) return;
-      if (DB.demandas.find(function(x) { return x.id === id; })) return;
+      // Mapeia índices pelos labels
+      const idx = {};
+      cols.forEach((c, i) => { if(c.label) idx[c.label] = i; });
 
-      let setorId = '';
-      const setorNome = String(d.Setor || d.setor || '');
-      if (setorNome) {
-        let setor = DB.setores.find(function(s) { return s.nome === setorNome; });
-        if (!setor) {
-          setor = { id: uid(), nome: setorNome, cor: '#e8275a', descricao: 'Importado do V1', equipamentos: [] };
-          DB.setores.push(setor);
+      const get = (row, key) => {
+        const i = idx[key];
+        if (i === undefined) return '';
+        const v = row.c[i];
+        return v && v.v !== null ? String(v.v) : '';
+      };
+
+      let novas = 0;
+      rows.forEach(function(row) {
+        const id = get(row, 'ID');
+        if (!id) return;
+        if (DB.demandas.find(x => x.id === id)) return;
+
+        let setorId = '';
+        const setorNome = get(row, 'Setor');
+        if (setorNome) {
+          let setor = DB.setores.find(s => s.nome === setorNome);
+          if (!setor) {
+            setor = { id: uid(), nome: setorNome, cor: '#e8275a', descricao: 'Importado do V1', equipamentos: [] };
+            DB.setores.push(setor);
+          }
+          setorId = setor.id;
         }
-        setorId = setor.id;
-      }
 
-      DB.demandas.push({
-        id: id,
-        titulo: String(d.Titulo || d.titulo || ''),
-        descricao: String(d.Descricao || d.descricao || ''),
-        setorId: setorId,
-        equipamento: String(d.Equipamento || d.equipamento || ''),
-        prioridade: String(d.Prioridade || d.prioridade || 'alta'),
-        status: String(d.Status || d.status || 'aguardando'),
-        origem: String(d.Origem || d.origem || 'V1'),
-        responsavel: String(d.Responsavel || d.responsavel || ''),
-        dataEntrega: String(d.DataEntrega || d.dataEntrega || ''),
-        criadoEm: String(d.CriadoEm || d.criadoEm || new Date().toISOString()),
-        os: String(d.OS || d.os || ''),
-        fonte: 'V1',
-        paradas: [],
-        anexos: [],
+        DB.demandas.push({
+          id,
+          titulo:      get(row, 'Titulo'),
+          descricao:   get(row, 'Descricao'),
+          setorId,
+          equipamento: get(row, 'Equipamento'),
+          prioridade:  get(row, 'Prioridade') || 'alta',
+          status:      get(row, 'Status')     || 'aguardando',
+          origem:      get(row, 'Origem')     || 'V1',
+          responsavel: get(row, 'Responsavel'),
+          dataEntrega: get(row, 'DataEntrega'),
+          criadoEm:    get(row, 'CriadoEm')   || new Date().toISOString(),
+          os:          get(row, 'OS'),
+          fonte: 'V1',
+          paradas: [],
+          anexos: [],
+        });
+        novas++;
       });
-      novas++;
-    });
 
-    if (novas > 0) {
-      save();
-      render();
-      console.log('Sincronizadas ' + novas + ' demanda(s) do V1!');
+      if (novas > 0) {
+        save();
+        render();
+        console.log('Sincronizadas ' + novas + ' demanda(s) do V1!');
+      }
+    } catch(e) {
+      console.log('Sync V1 parse erro:', e.message);
     }
   };
 
   script.onerror = function() {
-    delete window[callbackName];
-    document.body.removeChild(script);
-    console.log('Sync V1: erro ao carregar script');
+    try { delete window[callbackName]; document.body.removeChild(script); } catch(e) {}
+    console.log('Sync V1: erro ao carregar');
   };
 
-  script.src = DEMANDA_FLOW_API + '?acao=listar&callback=' + callbackName;
+  // Google Visualization API — funciona sem CORS
+  const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+    + '/gviz/tq?tqx=out:json&tq=select%20*&gid=' + SHEET_GID
+    + '&callback=' + callbackName;
+  script.src = url;
   document.body.appendChild(script);
 }
 
