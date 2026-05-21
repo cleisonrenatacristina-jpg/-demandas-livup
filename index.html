@@ -3625,89 +3625,85 @@ const SHEET_ID = '1SFxqM2GfkMPXlEmwvD8Lav1eyQ8FgXAVj7gZR18ek1E';
 // gid da aba Demandas (0 = primeira aba)
 const SHEET_GID = '509498813';
 
-// Sync V1: lê via Google Sheets JSON API (sem CORS)
-function sincronizarDemandasV1() {
-  const callbackName = 'gsCallback_' + Date.now();
-  const script = document.createElement('script');
+// Sync V1: lê via Google Sheets — fetch com no-cors workaround
+async function sincronizarDemandasV1() {
+  try {
+    // Usa a URL de exportação pública do Google Sheets
+    const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+      + '/gviz/tq?tqx=out:csv&gid=' + SHEET_GID;
 
-  window[callbackName] = function(data) {
-    try {
-      delete window[callbackName];
-      document.body.removeChild(script);
+    const resp = await fetch(url, { mode: 'cors' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const csv = await resp.text();
 
-      const rows = data.table.rows;
-      const cols = data.table.cols;
-      if (!rows || !rows.length) return;
+    const linhas = csv.trim().split('\n');
+    if (linhas.length < 2) return;
 
-      // Mapeia índices pelos labels
-      const idx = {};
-      cols.forEach((c, i) => { if(c.label) idx[c.label] = i; });
+    // Parse headers — remove aspas
+    const headers = parseCsvLine(linhas[0]).map(h => h.replace(/^"|"$/g,'').trim());
 
-      const get = (row, key) => {
-        const i = idx[key];
-        if (i === undefined) return '';
-        const v = row.c[i];
-        return v && v.v !== null ? String(v.v) : '';
-      };
+    let novas = 0;
+    for (let i = 1; i < linhas.length; i++) {
+      const cols = parseCsvLine(linhas[i]).map(v => v.replace(/^"|"$/g,'').trim());
+      const row = {};
+      headers.forEach((h, idx) => { row[h] = cols[idx] || ''; });
 
-      let novas = 0;
-      rows.forEach(function(row) {
-        const id = get(row, 'ID');
-        if (!id) return;
-        if (DB.demandas.find(x => x.id === id)) return;
+      const id = row['ID'];
+      if (!id) continue;
+      if (DB.demandas.find(x => x.id === id)) continue;
 
-        let setorId = '';
-        const setorNome = get(row, 'Setor');
-        if (setorNome) {
-          let setor = DB.setores.find(s => s.nome === setorNome);
-          if (!setor) {
-            setor = { id: uid(), nome: setorNome, cor: '#e8275a', descricao: 'Importado do V1', equipamentos: [] };
-            DB.setores.push(setor);
-          }
-          setorId = setor.id;
+      let setorId = '';
+      const setorNome = row['Setor'] || '';
+      if (setorNome) {
+        let setor = DB.setores.find(s => s.nome === setorNome);
+        if (!setor) {
+          setor = { id: uid(), nome: setorNome, cor: '#e8275a', descricao: 'Importado do V1', equipamentos: [] };
+          DB.setores.push(setor);
         }
-
-        DB.demandas.push({
-          id,
-          titulo:      get(row, 'Titulo'),
-          descricao:   get(row, 'Descricao'),
-          setorId,
-          equipamento: get(row, 'Equipamento'),
-          prioridade:  get(row, 'Prioridade') || 'alta',
-          status:      get(row, 'Status')     || 'aguardando',
-          origem:      get(row, 'Origem')     || 'V1',
-          responsavel: get(row, 'Responsavel'),
-          dataEntrega: get(row, 'DataEntrega'),
-          criadoEm:    get(row, 'CriadoEm')   || new Date().toISOString(),
-          os:          get(row, 'OS'),
-          fonte: 'V1',
-          paradas: [],
-          anexos: [],
-        });
-        novas++;
-      });
-
-      if (novas > 0) {
-        save();
-        render();
-        console.log('Sincronizadas ' + novas + ' demanda(s) do V1!');
+        setorId = setor.id;
       }
-    } catch(e) {
-      console.log('Sync V1 parse erro:', e.message);
+
+      DB.demandas.push({
+        id,
+        titulo:      row['Titulo']      || '',
+        descricao:   row['Descricao']   || '',
+        setorId,
+        equipamento: row['Equipamento'] || '',
+        prioridade:  row['Prioridade']  || 'alta',
+        status:      row['Status']      || 'aguardando',
+        origem:      row['Origem']      || 'V1',
+        responsavel: row['Responsavel'] || '',
+        dataEntrega: row['DataEntrega'] || '',
+        criadoEm:    row['CriadoEm']    || new Date().toISOString(),
+        os:          row['OS']          || '',
+        fonte: 'V1',
+        paradas: [],
+        anexos: [],
+      });
+      novas++;
     }
-  };
 
-  script.onerror = function() {
-    try { delete window[callbackName]; document.body.removeChild(script); } catch(e) {}
-    console.log('Sync V1: erro ao carregar');
-  };
+    if (novas > 0) {
+      save();
+      render();
+      console.log('Sincronizadas ' + novas + ' demanda(s) do V1!');
+    }
+  } catch(e) {
+    console.log('Sync V1 erro:', e.message);
+  }
+}
 
-  // Google Visualization API — funciona sem CORS
-  const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
-    + '/gviz/tq?tqx=out:json&tq=select%20*&gid=' + SHEET_GID
-    + '&callback=' + callbackName;
-  script.src = url;
-  document.body.appendChild(script);
+function parseCsvLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
 }
 
 // Roda ao abrir o app
