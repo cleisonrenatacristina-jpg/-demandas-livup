@@ -131,6 +131,8 @@
   }
   .d-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.3); }
   .d-card:last-child { margin-bottom: 0; }
+  .d-card-v1 { border-color: rgba(0,200,83,0.3) !important; }
+  .d-card-v1:hover { border-color: #00C853 !important; }
   .d-card-title { font-size: 12px; font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
   .d-card-desc { font-size: 11px; color: var(--muted); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .d-card-foot { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
@@ -431,6 +433,11 @@
       <option value="alta">🟠 Alta</option>
       <option value="media">🟡 Média</option>
       <option value="baixa">🟢 Baixa</option>
+    </select>
+    <select class="filter-sel" id="filtro-fonte" onchange="applyFilters()">
+      <option value="">Todas as fontes</option>
+      <option value="v1">📋 V1 Apontamentos</option>
+      <option value="manual">✋ Criadas manualmente</option>
     </select>
   </div>
 
@@ -1101,9 +1108,12 @@ function filterDemandas() {
   const busca  = document.getElementById("busca").value.toLowerCase();
   const setor  = document.getElementById("filtro-setor").value;
   const prio   = document.getElementById("filtro-prio").value;
+  const fonte  = document.getElementById("filtro-fonte")?.value||"";
   return DB.demandas.filter(d=>{
     if (setor && d.setorId!==setor) return false;
     if (prio  && d.prioridade!==prio) return false;
+    if (fonte==="v1" && d.fonte!=="V1" && !(d.origem||"").includes("V1")) return false;
+    if (fonte==="manual" && (d.fonte==="V1" || (d.origem||"").includes("V1"))) return false;
     if (busca && !d.titulo.toLowerCase().includes(busca) && !(d.descricao||"").toLowerCase().includes(busca)) return false;
     return true;
   });
@@ -1196,7 +1206,12 @@ function renderKanban() {
 function demandaCardHtml(d) {
   const pc   = PRIO[d.prioridade];
   const setor= DB.setores.find(s=>s.id===d.setorId);
-  return `<div class="d-card" data-id="${d.id}">
+  const isV1 = d.fonte==='V1' || (d.origem||'').includes('V1');
+  return `<div class="d-card${isV1?' d-card-v1':''}" data-id="${d.id}">
+    ${isV1?`<div style="display:flex;align-items:center;gap:5px;background:rgba(0,200,83,0.1);border-bottom:1px solid rgba(0,200,83,0.2);padding:4px 8px;margin:-10px -10px 8px -10px;border-radius:8px 8px 0 0;">
+      <span style="font-size:9px;font-weight:800;color:#00C853;letter-spacing:1px;">📋 V1 APONTAMENTOS</span>
+      ${d.os?`<span style="font-size:9px;color:#00C853;margin-left:auto;">OS: ${escHtml(d.os)}</span>`:''}
+    </div>`:''}
     <div class="d-card-title">${escHtml(d.titulo)}</div>
     ${d.descricao?`<div class="d-card-desc">${escHtml(d.descricao)}</div>`:""}
     <div class="d-card-foot">
