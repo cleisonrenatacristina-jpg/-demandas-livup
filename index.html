@@ -1320,7 +1320,18 @@ function openDemandaModal(idOrNew) {
 
   document.getElementById("md-titulo").value     = d?.titulo||"";
   document.getElementById("md-descricao").value  = d?.descricao||"";
-  document.getElementById("md-setor").value      = d?.setorId||"";
+  // Tenta por setorId, se não achar tenta por nome (demandas do V1)
+  var setorIdMatch = d?.setorId||"";
+  if(setorIdMatch && !DB.setores.find(s=>s.id===setorIdMatch)){
+    // Busca pelo nome do setor na descrição ou origem
+    var setorNomeBusca = d?.descricao ? 
+      DB.setores.find(s=>d.descricao.toLowerCase().includes(s.nome.toLowerCase())) : null;
+    if(!setorNomeBusca) setorNomeBusca = DB.setores.find(s=>
+      (d?.origem||'').toLowerCase().includes(s.nome.toLowerCase())
+    );
+    if(setorNomeBusca) setorIdMatch = setorNomeBusca.id;
+  }
+  document.getElementById("md-setor").value = setorIdMatch;
   onSetorChange(d?.equipamento||"");
   document.getElementById("md-prioridade").value = d?.prioridade||"media";
   document.getElementById("md-status").value     = d?.status||"aguardando";
@@ -1561,7 +1572,11 @@ function deleteSetor(){
 // filtra equipamentos ao mudar setor na demanda
 function onSetorChange(equipamentoSalvo){
   const setorId = document.getElementById("md-setor").value;
-  const setor = DB.setores.find(s=>s.id===setorId);
+  // Busca por ID ou por nome (compatibilidade com demandas do V1)
+  let setor = DB.setores.find(s=>s.id===setorId);
+  if(!setor && setorId) setor = DB.setores.find(s=>
+    s.nome.toLowerCase()===setorId.toLowerCase()
+  );
   const sel = document.getElementById("md-equipamento");
   const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,kgh:0}:e);
   if(!equips.length){
@@ -3655,7 +3670,11 @@ async function sincronizarDemandasV1() {
       let setorId = '';
       const setorNome = row['Setor'] || '';
       if (setorNome) {
-        let setor = DB.setores.find(s => s.nome === setorNome);
+        // Busca por nome exato ou case-insensitive
+        let setor = DB.setores.find(s => 
+          s.nome === setorNome || 
+          s.nome.toLowerCase() === setorNome.toLowerCase()
+        );
         if (!setor) {
           setor = { id: uid(), nome: setorNome, cor: '#e8275a', descricao: 'Importado do V1', equipamentos: [] };
           DB.setores.push(setor);
