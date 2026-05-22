@@ -1420,6 +1420,10 @@ function saveDemanda(){
 
 function deleteDemanda(){
   if(!confirm("Excluir esta demanda?")) return;
+  // Salva na blacklist para não recriar na sync
+  const blacklist = JSON.parse(localStorage.getItem('df_deleted')||'[]');
+  if(!blacklist.includes(editingDemandaId)) blacklist.push(editingDemandaId);
+  localStorage.setItem('df_deleted', JSON.stringify(blacklist));
   DB.demandas=DB.demandas.filter(d=>d.id!==editingDemandaId);
   save(); closeModal("modal-demanda"); render();
 }
@@ -3681,6 +3685,9 @@ async function sincronizarDemandasV1() {
       const id = row['ID'];
       if (!id) continue;
       if (DB.demandas.find(x => x.id === id)) continue;
+      // Pula demandas deletadas pelo usuário
+      const deleted = JSON.parse(localStorage.getItem('df_deleted')||'[]');
+      if (deleted.includes(id)) continue;
 
       let setorId = '';
       const setorNome = row['Setor'] || '';
