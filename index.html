@@ -956,6 +956,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script charset="utf-8">
 // ════════════════════════════════════════════════════════════════════
 // CONFIG
@@ -1074,8 +1075,84 @@ let currentAnexos    = [];
 let currentEquipamentos = [];
 let currentParadas   = [];
 
-function save() { localStorage.setItem("df3", JSON.stringify(DB)); }
+function save() { localStorage.setItem("df3", JSON.stringify(DB)); pushParaSupabase(); }
 function uid()  { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+// ════════════════════════════════════════════════════════════════════
+// SINCRONIZAÇÃO EM TEMPO REAL — SUPABASE
+// Mantém todos os usuários vendo os mesmos dados, ao vivo, sem recarregar.
+// Estado completo do app fica salvo como JSON numa única linha (id=1)
+// da tabela "df_estado", e mudanças são propagadas via Realtime.
+// ════════════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://nkiedavenpqypwnufheo.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5raWVkYXZlbnBxeXB3bnVmaGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NjQ4OTMsImV4cCI6MjA5NjQ0MDg5M30.k48D46bApzvfB6582WBKQFY_Yba51MRYDsEAFUnTrLg';
+
+const supa = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+let ultimaVersaoRemota = null; // evita re-renderizar com o eco da própria gravação
+let pushPendente = null;       // debounce: agrupa gravações rápidas em sequência
+
+function pushParaSupabase() {
+  if (!supa) return;
+  clearTimeout(pushPendente);
+  pushPendente = setTimeout(async () => {
+    const versao = new Date().toISOString();
+    ultimaVersaoRemota = versao;
+    const { error } = await supa
+      .from('df_estado')
+      .update({ dados: DB, atualizado_em: versao })
+      .eq('id', 1);
+    if (error) console.warn('[Supabase] Falha ao sincronizar:', error.message);
+  }, 400);
+}
+
+async function carregarDoSupabase() {
+  if (!supa) return;
+  try {
+    const { data, error } = await supa.from('df_estado').select('*').eq('id', 1).single();
+    if (error) { console.warn('[Supabase] Falha ao carregar estado remoto:', error.message); return; }
+    if (data && data.dados && Object.keys(data.dados).length) {
+      DB = mesclaReceitasLivup(data.dados);
+      ultimaVersaoRemota = data.atualizado_em;
+      localStorage.setItem('df3', JSON.stringify(DB));
+      render();
+    } else {
+      // Banco compartilhado ainda vazio: este navegador "semeia" o estado inicial
+      pushParaSupabase();
+    }
+    assinarMudancasRemotas();
+  } catch (e) {
+    console.warn('[Supabase] Erro ao inicializar sincronização:', e);
+  }
+}
+
+function assinarMudancasRemotas() {
+  if (!supa) return;
+  supa.channel('df_estado_live')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'df_estado', filter: 'id=eq.1' }, (payload) => {
+      const novo = payload.new;
+      if (!novo || !novo.dados) return;
+      if (novo.atualizado_em === ultimaVersaoRemota) return; // eco da própria gravação — ignora
+      ultimaVersaoRemota = novo.atualizado_em;
+      DB = mesclaReceitasLivup(novo.dados);
+      localStorage.setItem('df3', JSON.stringify(DB));
+      render();
+    })
+    .subscribe();
+}
+
+// Mesma lógica de merge usada no carregamento via localStorage (garante
+// que as receitas padrão da LivUp estejam sempre disponíveis).
+function mesclaReceitasLivup(saved) {
+  const idsLivup = new Set(RECEITAS_LIVUP.map(r=>r.id));
+  const custom = (saved.receitas||[]).filter(r=>!idsLivup.has(r.id));
+  saved.receitas = [...RECEITAS_LIVUP, ...custom];
+  saved.receitas = saved.receitas.map(r=>({...r, classe: r.classe||"Receitas das Caldeiras"}));
+  saved.setores = saved.setores || [];
+  saved.demandas = saved.demandas || [];
+  saved.reunioes = saved.reunioes || [];
+  return saved;
+}
 
 // ════════════════════════════════════════════════════════════════════
 // UTILS
@@ -3636,6 +3713,7 @@ function escHtml(str){
 // ════════════════════════════════════════════════════════════════════
 render();
 updateApiKeyBtn();
+carregarDoSupabase();
 
 // default datetime para nova parada
 (function(){
