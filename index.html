@@ -653,6 +653,12 @@
             </div>
             <button class="btn" onclick="registrarParadaDireta()" style="background:#f97316;color:#0b0f1a;padding:8px 20px;font-size:13px;white-space:nowrap;">+ Registrar</button>
           </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <span style="font-size:11px;color:var(--muted);">Tem o histórico de paradas do Engo? Importe o arquivo gerado pelo script de exportação:</span>
+            <div class="flex1"></div>
+            <button class="btn btn-ghost" onclick="document.getElementById('import-paradas-engo-input').click()" style="font-size:11px;padding:6px 14px;color:#f97316;border-color:#f9731640;white-space:nowrap;">📥 Importar paradas (Engo)</button>
+            <input type="file" id="import-paradas-engo-input" accept=".json" style="display:none" onchange="importarParadasEngo(event)"/>
+          </div>
         </div>
 
         <!-- FILTROS DASHBOARD -->
@@ -3563,6 +3569,84 @@ function importBackup(event){
     }
     // limpa o input para permitir importar o mesmo arquivo novamente
     event.target.value = "";
+  };
+  reader.readAsText(file);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// IMPORTAR PARADAS DO ENGO (gerado pelo script de exportação no Engo)
+// ════════════════════════════════════════════════════════════════════
+function importarParadasEngo(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const payload = JSON.parse(e.target.result);
+      const registros = payload.paradas || payload;
+      if(!Array.isArray(registros)){
+        alert("❌ Arquivo inválido! Use o arquivo .json gerado pelo script de exportação do Engo.");
+        return;
+      }
+
+      // índice de equipamentos cadastrados, por nome normalizado
+      const indice = {};
+      DB.setores.forEach(s=>{
+        (s.equipamentos||[]).forEach(eq=>{
+          const chave = (eq.nome||"").trim().toUpperCase();
+          if(chave) indice[chave] = {setor:s, equip:eq};
+        });
+      });
+
+      if(!DB.paradasDiretas) DB.paradasDiretas=[];
+      const jaImportadosIds = new Set((DB.paradasDiretas||[]).map(p=>p.engoId).filter(Boolean));
+
+      let importadas=0, repetidas=0;
+      const semEquipNomes = new Set();
+
+      registros.forEach(r=>{
+        if(r.id && jaImportadosIds.has(r.id)){ repetidas++; return; }
+        const chave = (r.equipamento||"").trim().toUpperCase();
+        const match = indice[chave];
+        if(!match){ semEquipNomes.add(r.equipamento); return; }
+
+        const min = Math.round(r.minutos||0);
+        if(min<=0) return;
+        const kgh = match.equip.kgh||0;
+        const tipo = match.equip.tipo||"kgh";
+        const cicloMin = match.equip.cicloMin||0;
+        const cicloKg  = match.equip.cicloKg||0;
+        const kgPerdidos = (tipo==="ciclo" && cicloMin>0 && cicloKg>0)
+          ? (cicloKg/cicloMin)*min
+          : (kgh>0 ? (min/60)*kgh : 0);
+
+        DB.paradasDiretas.push({
+          id: uid(), engoId: r.id||null,
+          setorId: match.setor.id, setorNome: match.setor.nome,
+          equipNome: match.equip.nome, tipo, kgh, cicloMin, cicloKg,
+          receitaId:"", receitaNome:"", receitaCaldeira:"",
+          motivo:"manutencao", inicio: r.inicio, fim: r.fim,
+          obs: r.descricao||"", minutos: min, kgPerdidos, fonte:"engo"
+        });
+        importadas++;
+      });
+
+      save();
+      renderParadasView();
+
+      let msg = `✅ Importação do Engo concluída!\n\n• ${importadas} parada(s) importada(s)`;
+      if(repetidas) msg += `\n• ${repetidas} já importada(s) anteriormente (puladas)`;
+      if(semEquipNomes.size) msg += `\n• ${semEquipNomes.size} equipamento(s) sem cadastro correspondente — não importados`;
+      if(semEquipNomes.size){
+        msg += `\n\nNão encontrados:\n` + [...semEquipNomes].slice(0,15).join("\n");
+        if(semEquipNomes.size>15) msg += `\n... e mais ${semEquipNomes.size-15}`;
+      }
+      alert(msg);
+
+    } catch(err){
+      alert("❌ Erro ao ler o arquivo. Certifique-se de que é um JSON válido gerado pelo script do Engo.\n\n"+err.message);
+    }
+    event.target.value="";
   };
   reader.readAsText(file);
 }
