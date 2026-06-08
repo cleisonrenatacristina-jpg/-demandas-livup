@@ -370,6 +370,67 @@
   .mt4 { margin-top: 4px; }
   .mb8 { margin-bottom: 8px; }
   .mr8 { margin-right: 8px; }
+
+  /* ════════════════════════════════════════════════════════════════
+     VERSAO MOBILE — telas estreitas (celulares e tablets pequenos)
+     ════════════════════════════════════════════════════════════════ */
+  @media (max-width: 768px) {
+    /* Topbar tem muitos botoes para caber numa linha so — quebra em varias linhas */
+    #topbar {
+      flex-wrap: wrap; height: auto; min-height: 50px;
+      gap: 6px; row-gap: 8px; padding: 8px 10px; overflow: visible;
+    }
+    #logo { font-size: 14px; }
+    #logo img { height: 26px; }
+    #topbar .flex1 { display: none; }
+    /* Acoes de configuracao (backup/restaurar/Slack/API) ficam so no desktop */
+    #topbar > button[onclick="exportBackup()"],
+    #topbar > button[onclick^="document.getElementById('import-input')"],
+    #topbar > button[onclick="abrirConfigSlack()"],
+    #topbar > #btn-apikey {
+      display: none;
+    }
+    /* Abas de navegacao ganham linha propria, ocupando a largura toda e rolando */
+    #nav { flex: 1 1 100%; order: 1; overflow-x: auto; }
+    .nav-tab { padding: 6px 10px; font-size: 11px; }
+
+    #statsbar { padding: 6px 10px; gap: 6px; }
+    .stat-chip { padding: 4px 9px; }
+    .stat-num { font-size: 14px; }
+    .stat-lbl { font-size: 10px; }
+    #search-wrap { min-width: 90px; }
+
+    /* Kanban: cada coluna ocupa quase a tela inteira — desliza uma de cada vez */
+    #kanban-scroll {
+      padding: 10px 10px;
+      scroll-snap-type: x mandatory;
+    }
+    .k-col {
+      width: 86vw;
+      scroll-snap-align: start;
+    }
+
+    /* Tabelas em grade ficam compactas demais — preserva colunas e habilita rolagem horizontal */
+    #fila-wrap { padding: 10px; overflow-x: auto; }
+    .fila-head, .fila-row { min-width: 620px; }
+
+    #pd-por-equipamento, #pd-lista-todas, #mu-por-equip, #mu-lista, #md-parada-stats {
+      overflow-x: auto;
+    }
+    .equip-row, .equip-head { min-width: 420px; }
+    .parada-reg, .parada-reg-head { min-width: 520px; }
+
+    /* Formularios e paineis com varias colunas viram coluna unica */
+    .grid2, .grid4 { grid-template-columns: 1fr !important; }
+    #pd-kpis, #mu-kpis { grid-template-columns: 1fr 1fr !important; }
+    #np-receita-area { grid-template-columns: 1fr !important; }
+
+    .modal-body { padding: 14px; gap: 10px; }
+    .modal-hd { padding: 12px 14px; }
+    .modal-ft { padding: 10px 14px; flex-wrap: wrap; }
+
+    #setores-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
