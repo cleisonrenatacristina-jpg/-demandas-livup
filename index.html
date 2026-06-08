@@ -1184,8 +1184,13 @@ async function carregarDoSupabase() {
     const localTs = localStorage.getItem('df3_ts');
     const remotoTem = data && data.dados && Object.keys(data.dados).length && contarItens(data.dados) > 0;
     const localTem = contarItens(DB) > 0;
-    // Só consideramos a remota "mais nova" se tivermos uma data local confiável para comparar.
-    const remotoMaisNovo = remotoTem && localTs && new Date(data.atualizado_em) > new Date(localTs);
+    // Se já sincronizamos antes (temos carimbo local), comparamos por data.
+    // Caso contrário (aparelho novo, só com o estado inicial de exemplo),
+    // comparamos pela quantidade de itens — evita que um aparelho "zerado"
+    // sobrescreva dados reais da nuvem com os 3 setores de exemplo.
+    const remotoMaisNovo = remotoTem && (localTs
+      ? new Date(data.atualizado_em) > new Date(localTs)
+      : contarItens(data.dados) >= contarItens(DB));
 
     if (remotoTem && (!localTem || remotoMaisNovo)) {
       // Sem dado local relevante, ou remoto comprovadamente mais recente -> usa o remoto.
