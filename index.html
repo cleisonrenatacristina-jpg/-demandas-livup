@@ -1075,7 +1075,7 @@ let currentAnexos    = [];
 let currentEquipamentos = [];
 let currentParadas   = [];
 
-function save() { localStorage.setItem("df3", JSON.stringify(DB)); pushParaSupabase(); }
+function save() { localStorage.setItem("df3", JSON.stringify(DB)); localStorage.setItem("df3_ts", new Date().toISOString()); pushParaSupabase(); }
 function uid()  { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1098,6 +1098,7 @@ function pushParaSupabase() {
   pushPendente = setTimeout(async () => {
     const versao = new Date().toISOString();
     ultimaVersaoRemota = versao;
+    localStorage.setItem('df3_ts', versao);
     const { error } = await supa
       .from('df_estado')
       .update({ dados: DB, atualizado_em: versao })
@@ -1106,18 +1107,34 @@ function pushParaSupabase() {
   }, 400);
 }
 
+// Conta itens relevantes para decidir qual versão (local vs remota) é "mais completa".
+function contarItens(estado) {
+  if (!estado) return 0;
+  return (estado.setores||[]).length + (estado.demandas||[]).length + (estado.reunioes||[]).length;
+}
+
 async function carregarDoSupabase() {
   if (!supa) return;
   try {
     const { data, error } = await supa.from('df_estado').select('*').eq('id', 1).single();
-    if (error) { console.warn('[Supabase] Falha ao carregar estado remoto:', error.message); return; }
-    if (data && data.dados && Object.keys(data.dados).length) {
+    if (error) { console.warn('[Supabase] Falha ao carregar estado remoto:', error.message); assinarMudancasRemotas(); return; }
+
+    const localTs = localStorage.getItem('df3_ts');
+    const remotoTem = data && data.dados && Object.keys(data.dados).length && contarItens(data.dados) > 0;
+    const localTem = contarItens(DB) > 0;
+    // Só consideramos a remota "mais nova" se tivermos uma data local confiável para comparar.
+    const remotoMaisNovo = remotoTem && localTs && new Date(data.atualizado_em) > new Date(localTs);
+
+    if (remotoTem && (!localTem || remotoMaisNovo)) {
+      // Sem dado local relevante, ou remoto comprovadamente mais recente -> usa o remoto.
       DB = mesclaReceitasLivup(data.dados);
       ultimaVersaoRemota = data.atualizado_em;
       localStorage.setItem('df3', JSON.stringify(DB));
+      localStorage.setItem('df3_ts', data.atualizado_em);
       render();
     } else {
-      // Banco compartilhado ainda vazio: este navegador "semeia" o estado inicial
+      // Há dado local relevante e não temos prova de que o remoto é mais novo
+      // -> preserva o local e publica-o na nuvem (nunca sobrescreve sem necessidade).
       pushParaSupabase();
     }
     assinarMudancasRemotas();
