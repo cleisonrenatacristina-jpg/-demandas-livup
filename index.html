@@ -939,7 +939,7 @@
 </div>
 
 <!-- MODAL ATA -->
-<div class="overlay" id="modal-ata" style="display:none" onclick="if(event.target===this)closeModal('modal-ata')">
+<div class="overlay" id="modal-ata" style="display:none" onclick="if(event.target===this)tentarFecharAta()">
   <div class="modal" style="max-width:700px;">
     <div class="modal-hd">
       <div class="modal-hd-title" id="ma-title">📝 Nova Ata de Reunião</div>
@@ -2030,7 +2030,7 @@ function renderAtaTarefas(){
 
 function setTarefaField(tid,key,val){
   const t=ataTaskList.find(x=>x._id===tid);
-  if(t) t[key]=val;
+  if(t){ t[key]=val; saveDraft(); }
 }
 
 function updateAtaSaveBtn(){
@@ -2254,7 +2254,7 @@ Seja direto, profissional e use linguagem de negócios. Máximo 300 palavras.`;
         "anthropic-dangerous-direct-browser-access": "true"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 1000,
         messages: [{ role: "user", content: prompt }]
       })
@@ -3858,7 +3858,13 @@ function closeLightbox(){
 }
 
 // fechar lightbox com ESC
-document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeLightbox(); });
+document.addEventListener("keydown", e=>{
+  if(e.key==="Escape"){
+    const modalAta = document.getElementById("modal-ata");
+    if(modalAta && modalAta.style.display!=="none"){ tentarFecharAta(); return; }
+    closeLightbox();
+  }
+});
 
 // ════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -3866,6 +3872,23 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeLightbox(); 
 function closeModal(id){
   document.getElementById(id).style.display="none";
   if(id==="modal-ata") stopDraftAutoSave();
+}
+
+function tentarFecharAta(){
+  // Verifica se há conteúdo digitado antes de fechar pelo clique no overlay
+  const titulo = document.getElementById("ma-titulo")?.value?.trim()||"";
+  const pauta  = document.getElementById("ma-pauta")?.value?.trim()||"";
+  const partic = document.getElementById("ma-participantes")?.value?.trim()||"";
+  const temConteudo = titulo||pauta||partic||(ataTaskList&&ataTaskList.length);
+  if(!temConteudo){ closeModal("modal-ata"); return; }
+  // Tem conteúdo: salva rascunho e avisa em vez de fechar silenciosamente
+  saveDraft();
+  const ind = document.getElementById("draft-indicator");
+  if(ind){
+    ind.textContent="💾 Rascunho salvo — clique em Cancelar para fechar";
+    ind.style.opacity=1;
+    setTimeout(()=>{ ind.style.opacity=0; }, 3500);
+  }
 }
 
 function escHtml(str){
