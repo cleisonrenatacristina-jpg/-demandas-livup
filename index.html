@@ -54,6 +54,46 @@
   #sync-status.saved  { opacity:1; color:var(--green);   background:rgba(34,197,94,.1);  border:1px solid rgba(34,197,94,.25); }
   #sync-status.error  { opacity:1; color:var(--red);     background:rgba(239,68,68,.1);  border:1px solid rgba(239,68,68,.25); }
 
+  /* ── AGENDA ── */
+  #agenda-wrap { display:flex; height:100%; overflow:hidden; }
+  #agenda-cal-col { width:290px; min-width:250px; flex-shrink:0; padding:14px 12px; overflow-y:auto; border-right:1px solid var(--border); }
+  #agenda-day-col { flex:1; overflow-y:auto; padding:16px 20px; }
+  .ag-cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .ag-cal-title  { font-size:14px; font-weight:700; color:var(--text); }
+  .ag-cal-nav    { background:none; border:1px solid var(--border2); color:var(--muted); border-radius:7px; width:26px; height:26px; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; }
+  .ag-cal-nav:hover { color:var(--text); border-color:var(--accent); }
+  .ag-cal-grid   { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .ag-wd  { text-align:center; font-size:9px; font-weight:700; color:var(--muted); padding:3px 0 5px; letter-spacing:.3px; }
+  .ag-day { min-height:34px; border-radius:7px; padding:3px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; transition:background .12s; }
+  .ag-day:hover  { background:var(--border); }
+  .ag-day.other-m { opacity:.2; pointer-events:none; }
+  .ag-day.today .ag-dn { background:var(--accent); color:#fff; border-radius:50%; }
+  .ag-day.sel    { background:rgba(245,158,11,.1); outline:2px solid var(--accent2); outline-offset:-2px; }
+  .ag-dn  { font-size:11px; font-weight:600; color:var(--text); width:22px; height:22px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .ag-dots { display:flex; gap:2px; flex-wrap:wrap; justify-content:center; }
+  .ag-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+  .ag-day-title  { font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px; }
+  .ag-sec  { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:.8px; text-transform:uppercase; margin:14px 0 7px; }
+  .ag-ev   { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:7px; display:flex; gap:10px; align-items:flex-start; cursor:pointer; transition:border-color .12s; }
+  .ag-ev:hover { border-color:var(--border2); }
+  .ag-ev-bar   { width:4px; border-radius:4px; flex-shrink:0; align-self:stretch; }
+  .ag-ev-titulo { font-size:13px; font-weight:700; color:var(--text); }
+  .ag-ev-hora  { font-size:11px; color:var(--muted); font-family:var(--mono); }
+  .ag-ev-desc  { font-size:11px; color:var(--muted); margin-top:2px; }
+  .ag-task { background:var(--card); border:1px solid var(--border); border-radius:9px; padding:8px 12px; margin-bottom:6px; display:flex; align-items:center; gap:9px; }
+  .ag-chk  { width:18px; height:18px; border-radius:5px; border:2px solid var(--border2); cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; transition:all .12s; }
+  .ag-chk.done { background:var(--green); border-color:var(--green); color:#fff; }
+  .ag-task-lbl { flex:1; font-size:13px; color:var(--text); cursor:pointer; }
+  .ag-task-lbl.done { text-decoration:line-through; color:var(--muted); }
+  .ag-task-x { background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 4px; border-radius:4px; }
+  .ag-task-x:hover { color:var(--red); }
+  .ag-empty { text-align:center; color:var(--muted); font-size:12px; padding:12px 0; }
+  .ag-badge { background:var(--accent); color:#fff; font-size:9px; font-weight:800; border-radius:9px; padding:1px 5px; margin-left:4px; vertical-align:middle; }
+  @media(max-width:640px){
+    #agenda-wrap { flex-direction:column; }
+    #agenda-cal-col { width:100%; border-right:none; border-bottom:1px solid var(--border); }
+  }
+
   /* ── NAV TABS ── */
   #nav { display: flex; gap: 4px; flex-shrink: 1; overflow-x: auto; min-width: 0; }
   .nav-tab {
@@ -452,6 +492,7 @@
       <button class="nav-tab"             onclick="setView('fila')"     id="tab-fila">📑 Fila</button>
       <button class="nav-tab"             onclick="setView('paradas')"  id="tab-paradas">⏱️ Paradas</button>
       <button class="nav-tab"             onclick="setView('setores')"  id="tab-setores">🏢 Setores</button>
+      <button class="nav-tab"             onclick="setView('agenda')"  id="tab-agenda">📅 Agenda<span id="ag-badge" class="ag-badge" style="display:none"></span></button>
     </div>
     <div class="flex1"></div>
     <div id="sync-status"></div>
@@ -767,6 +808,28 @@
       </div>
     </div>
 
+    <!-- AGENDA -->
+    <div class="view" id="view-agenda">
+      <div id="agenda-wrap">
+        <div id="agenda-cal-col">
+          <div class="ag-cal-header">
+            <button class="ag-cal-nav" onclick="agendaNavMes(-1)">&#8249;</button>
+            <span class="ag-cal-title" id="ag-mes-titulo"></span>
+            <button class="ag-cal-nav" onclick="agendaNavMes(1)">&#8250;</button>
+          </div>
+          <div class="ag-cal-grid" id="ag-cal-grid"></div>
+          <div style="margin-top:14px;display:flex;gap:6px;">
+            <button class="btn btn-primary" style="flex:1;font-size:11px;" onclick="openAgEventModal(null)">+ Compromisso</button>
+            <button class="btn btn-secondary" style="flex:1;font-size:11px;" onclick="openAgTarefaModal(null)">+ Tarefa</button>
+          </div>
+        </div>
+        <div id="agenda-day-col">
+          <div id="ag-day-title" class="ag-day-title"></div>
+          <div id="ag-day-body"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1032,6 +1095,77 @@
   </div>
 </div>
 
+<!-- MODAL COMPROMISSO -->
+<div class="overlay" id="modal-ag-event" style="display:none" onclick="if(event.target===this)fecharAgEventModal()">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hd">
+      <div class="modal-hd-title" id="ag-event-modal-title">Novo Compromisso</div>
+      <button class="btn btn-secondary btn-sm" onclick="fecharAgEventModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ag-event-id"/>
+      <div class="field"><label>Título *</label><input id="ag-event-titulo" placeholder="Ex: Reunião com fornecedor"/></div>
+      <div class="grid2">
+        <div class="field"><label>Data *</label><input type="date" id="ag-event-data"/></div>
+        <div class="field"><label>Cor</label>
+          <select id="ag-event-cor">
+            <option value="#e8275a">🔴 Vermelho</option>
+            <option value="#3b82f6">🔵 Azul</option>
+            <option value="#22c55e">🟢 Verde</option>
+            <option value="#f59e0b">🟡 Amarelo</option>
+            <option value="#a78bfa">🟣 Roxo</option>
+            <option value="#38bdf8">🔷 Azul claro</option>
+          </select>
+        </div>
+        <div class="field"><label>Hora início</label><input type="time" id="ag-event-inicio"/></div>
+        <div class="field"><label>Hora fim</label><input type="time" id="ag-event-fim"/></div>
+      </div>
+      <div class="field"><label>Descrição</label><textarea id="ag-event-desc" rows="2" placeholder="Detalhes do compromisso..."></textarea></div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="ag-event-slack" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)"/>
+        <label for="ag-event-slack" style="font-size:12px;color:var(--muted);cursor:pointer;">Enviar alerta no Slack ao salvar</label>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button id="ag-event-del-btn" class="btn btn-danger" onclick="deleteAgEvent()" style="display:none">🗑 Excluir</button>
+      <div class="flex1"></div>
+      <button class="btn btn-secondary" onclick="fecharAgEventModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAgEvent()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TAREFA AGENDA -->
+<div class="overlay" id="modal-ag-tarefa" style="display:none" onclick="if(event.target===this)fecharAgTarefaModal()">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-hd">
+      <div class="modal-hd-title" id="ag-tarefa-modal-title">Nova Tarefa</div>
+      <button class="btn btn-secondary btn-sm" onclick="fecharAgTarefaModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ag-tarefa-id"/>
+      <div class="field"><label>Título *</label><input id="ag-tarefa-titulo" placeholder="Ex: Enviar relatório mensal"/></div>
+      <div class="grid2">
+        <div class="field"><label>Prazo *</label><input type="date" id="ag-tarefa-prazo"/></div>
+        <div class="field"><label>Prioridade</label>
+          <select id="ag-tarefa-prio">
+            <option value="normal">Normal</option>
+            <option value="alta">Alta</option>
+            <option value="critica">Crítica</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Descrição</label><textarea id="ag-tarefa-desc" rows="2" placeholder="Detalhes da tarefa..."></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button id="ag-tarefa-del-btn" class="btn btn-danger" onclick="deleteAgTarefa(null)" style="display:none">🗑 Excluir</button>
+      <div class="flex1"></div>
+      <button class="btn btn-secondary" onclick="fecharAgTarefaModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAgTarefa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script charset="utf-8">
 // ════════════════════════════════════════════════════════════════════
@@ -1119,6 +1253,8 @@ const INITIAL = {
   ],
   demandas:[],
   reunioes:[],
+  agenda:[],
+  tarefas_agenda:[],
   receitas:RECEITAS_LIVUP,
 };
 
@@ -1265,6 +1401,8 @@ function mesclaReceitasLivup(saved) {
   saved.setores = saved.setores || [];
   saved.demandas = saved.demandas || [];
   saved.reunioes = saved.reunioes || [];
+  saved.agenda = saved.agenda || [];
+  saved.tarefas_agenda = saved.tarefas_agenda || [];
   return saved;
 }
 
@@ -1342,6 +1480,7 @@ function render() {
   if (currentView==="fila")     renderFila();
   if (currentView==="reunioes") renderReunioes();
   if (currentView==="setores")  renderSetores();
+  if (currentView==="agenda")  renderAgenda();
   if (currentView==="paradas") {
     // define hoje como padrão no filtro de data se estiver vazio
     const dfEl = document.getElementById("pd-data-filtro");
@@ -1357,6 +1496,7 @@ function updateStats() {
   document.getElementById("st-conc").textContent  = d.filter(x=>x.status==="concluido").length;
   document.getElementById("st-crit").textContent  = d.filter(x=>x.prioridade==="critica"&&x.status!=="concluido"&&x.status!=="cancelado").length;
   document.getElementById("st-reun").textContent  = DB.reunioes.length;
+  updateAgBadge();
 }
 
 function rebuildSetorFilter() {
@@ -3921,6 +4061,267 @@ function escHtml(str){
     .replace(/</g,"&lt;")
     .replace(/>/g,"&gt;")
     .replace(/"/g,"&quot;");
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AGENDA
+// ════════════════════════════════════════════════════════════════════
+let agMes = new Date().getMonth();
+let agAno = new Date().getFullYear();
+let agDiaSel = new Date().toISOString().slice(0,10);
+
+const AG_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const AG_DIAS  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+function agendaNavMes(delta) {
+  agMes += delta;
+  if (agMes > 11) { agMes = 0; agAno++; }
+  if (agMes < 0)  { agMes = 11; agAno--; }
+  renderAgCal();
+}
+
+function selectAgDay(dateStr) {
+  agDiaSel = dateStr;
+  // navega ao mês do dia clicado se necessário
+  const [a,m] = dateStr.split('-').map(Number);
+  agAno = a; agMes = m - 1;
+  renderAgCal();
+  renderAgDay();
+}
+
+function renderAgenda() {
+  renderAgCal();
+  renderAgDay();
+}
+
+function renderAgCal() {
+  const tituloEl = document.getElementById('ag-mes-titulo');
+  const gridEl   = document.getElementById('ag-cal-grid');
+  if (!tituloEl || !gridEl) return;
+  tituloEl.textContent = AG_MESES[agMes] + ' ' + agAno;
+
+  const hoje       = new Date().toISOString().slice(0,10);
+  const primDia    = new Date(agAno, agMes, 1).getDay();
+  const diasMes    = new Date(agAno, agMes + 1, 0).getDate();
+  const diasAnt    = new Date(agAno, agMes, 0).getDate();
+
+  let html = AG_DIAS.map(d => `<div class="ag-wd">${d}</div>`).join('');
+
+  // dias do mês anterior
+  for (let i = primDia - 1; i >= 0; i--) {
+    html += `<div class="ag-day other-m"><span class="ag-dn">${diasAnt - i}</span></div>`;
+  }
+
+  // dias do mês atual
+  for (let d = 1; d <= diasMes; d++) {
+    const [,, dd] = new Date(agAno, agMes, d).toISOString().split('T')[0].split('-');
+    const dateStr = `${agAno}-${String(agMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const evs  = (DB.agenda||[]).filter(e => e.data === dateStr);
+    const tars = (DB.tarefas_agenda||[]).filter(t => t.prazo === dateStr && !t.concluido);
+    let cls = 'ag-day';
+    if (dateStr === hoje)     cls += ' today';
+    if (dateStr === agDiaSel) cls += ' sel';
+    const dots = evs.map(e => `<span class="ag-dot" style="background:${e.cor||'#e8275a'}"></span>`).join('')
+                 + (tars.length ? `<span class="ag-dot" style="background:#a78bfa"></span>` : '');
+    html += `<div class="${cls}" onclick="selectAgDay('${dateStr}')">
+      <span class="ag-dn">${d}</span>
+      ${dots ? `<div class="ag-dots">${dots}</div>` : ''}
+    </div>`;
+  }
+
+  // completar última linha
+  const total = primDia + diasMes;
+  const resto = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let d = 1; d <= resto; d++) {
+    html += `<div class="ag-day other-m"><span class="ag-dn">${d}</span></div>`;
+  }
+
+  gridEl.innerHTML = html;
+}
+
+function renderAgDay() {
+  const bodyEl  = document.getElementById('ag-day-body');
+  const titleEl = document.getElementById('ag-day-title');
+  if (!bodyEl || !titleEl) return;
+
+  const hoje  = new Date().toISOString().slice(0,10);
+  const [a,m,d] = agDiaSel.split('-');
+  const nomeDia = AG_DIAS[new Date(`${agDiaSel}T12:00:00`).getDay()];
+  titleEl.textContent = `${nomeDia}, ${parseInt(d)} de ${AG_MESES[parseInt(m)-1]}${agDiaSel===hoje?' · Hoje':''}`;
+
+  const evs      = (DB.agenda||[]).filter(e => e.data === agDiaSel)
+                    .sort((a,b) => (a.horaInicio||'').localeCompare(b.horaInicio||''));
+  const tarefas  = (DB.tarefas_agenda||[]).filter(t => t.prazo === agDiaSel);
+  const atrasadas= agDiaSel===hoje
+    ? (DB.tarefas_agenda||[]).filter(t => t.prazo < hoje && !t.concluido)
+    : [];
+
+  let html = '';
+
+  html += `<div class="ag-sec">📅 Compromissos</div>`;
+  if (evs.length) {
+    html += evs.map(e => `
+      <div class="ag-ev" onclick="openAgEventModal('${e.id}')">
+        <div class="ag-ev-bar" style="background:${e.cor||'#e8275a'}"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="ag-ev-titulo">${e.titulo}</div>
+          ${(e.horaInicio||e.horaFim) ? `<div class="ag-ev-hora">${e.horaInicio||''}${e.horaFim?' → '+e.horaFim:''}</div>` : ''}
+          ${e.descricao ? `<div class="ag-ev-desc">${e.descricao}</div>` : ''}
+        </div>
+      </div>`).join('');
+  } else {
+    html += `<div class="ag-empty">Nenhum compromisso</div>`;
+  }
+
+  html += `<div class="ag-sec">✅ Tarefas com prazo hoje</div>`;
+  if (tarefas.length) {
+    html += tarefas.map(t => agTarefaHtml(t)).join('');
+  } else {
+    html += `<div class="ag-empty">Nenhuma tarefa</div>`;
+  }
+
+  if (atrasadas.length) {
+    html += `<div class="ag-sec" style="color:var(--red)">⚠ Atrasadas (${atrasadas.length})</div>`;
+    html += atrasadas.map(t => agTarefaHtml(t)).join('');
+  }
+
+  html += `<div style="margin-top:18px;display:flex;gap:8px;">
+    <button class="btn btn-primary btn-sm" onclick="openAgEventModal(null)">+ Compromisso</button>
+    <button class="btn btn-secondary btn-sm" onclick="openAgTarefaModal(null)">+ Tarefa</button>
+  </div>`;
+
+  bodyEl.innerHTML = html;
+}
+
+function agTarefaHtml(t) {
+  const cor = t.prioridade==='critica' ? 'var(--red)' : t.prioridade==='alta' ? 'var(--accent2)' : 'var(--muted)';
+  return `<div class="ag-task">
+    <div class="ag-chk${t.concluido?' done':''}" onclick="toggleAgTarefa('${t.id}')">${t.concluido?'✓':''}</div>
+    <div class="ag-task-lbl${t.concluido?' done':''}" onclick="openAgTarefaModal('${t.id}')">
+      ${t.titulo}${t.prioridade&&t.prioridade!=='normal' ? `<span style="font-size:10px;color:${cor};margin-left:6px;">${t.prioridade.toUpperCase()}</span>` : ''}
+    </div>
+    <button class="ag-task-x" onclick="deleteAgTarefa('${t.id}')">✕</button>
+  </div>`;
+}
+
+function updateAgBadge() {
+  const badge = document.getElementById('ag-badge');
+  if (!badge) return;
+  const hoje  = new Date().toISOString().slice(0,10);
+  const n = (DB.agenda||[]).filter(e => e.data === hoje).length
+          + (DB.tarefas_agenda||[]).filter(t => t.prazo === hoje && !t.concluido).length
+          + (DB.tarefas_agenda||[]).filter(t => t.prazo < hoje && !t.concluido).length;
+  badge.textContent = n > 9 ? '9+' : n;
+  badge.style.display = n > 0 ? 'inline' : 'none';
+}
+
+// ── MODAL COMPROMISSO ──
+function openAgEventModal(id) {
+  const e = id ? (DB.agenda||[]).find(x => x.id===id) : null;
+  document.getElementById('ag-event-id').value     = e ? e.id : '';
+  document.getElementById('ag-event-titulo').value  = e ? e.titulo : '';
+  document.getElementById('ag-event-data').value   = e ? e.data : agDiaSel;
+  document.getElementById('ag-event-inicio').value  = e ? (e.horaInicio||'') : '';
+  document.getElementById('ag-event-fim').value    = e ? (e.horaFim||'') : '';
+  document.getElementById('ag-event-desc').value   = e ? (e.descricao||'') : '';
+  document.getElementById('ag-event-cor').value    = e ? (e.cor||'#e8275a') : '#e8275a';
+  document.getElementById('ag-event-slack').checked = false;
+  document.getElementById('ag-event-modal-title').textContent = e ? 'Editar Compromisso' : 'Novo Compromisso';
+  document.getElementById('ag-event-del-btn').style.display = e ? '' : 'none';
+  document.getElementById('modal-ag-event').style.display = 'flex';
+  setTimeout(()=>document.getElementById('ag-event-titulo').focus(), 80);
+}
+
+function fecharAgEventModal() { document.getElementById('modal-ag-event').style.display = 'none'; }
+
+function saveAgEvent() {
+  const titulo = document.getElementById('ag-event-titulo').value.trim();
+  const data   = document.getElementById('ag-event-data').value;
+  if (!titulo || !data) { alert('Preencha título e data.'); return; }
+  const id = document.getElementById('ag-event-id').value || ('ev_' + Date.now());
+  const ev = {
+    id, titulo, data,
+    horaInicio: document.getElementById('ag-event-inicio').value,
+    horaFim:    document.getElementById('ag-event-fim').value,
+    descricao:  document.getElementById('ag-event-desc').value.trim(),
+    cor:        document.getElementById('ag-event-cor').value,
+  };
+  if (!DB.agenda) DB.agenda = [];
+  const idx = DB.agenda.findIndex(x => x.id === id);
+  if (idx >= 0) DB.agenda[idx] = ev; else DB.agenda.push(ev);
+  if (document.getElementById('ag-event-slack').checked) notificarSlackAgenda(ev);
+  fecharAgEventModal();
+  agDiaSel = data;
+  save(); renderAgenda();
+}
+
+function deleteAgEvent() {
+  const id = document.getElementById('ag-event-id').value;
+  if (!id || !confirm('Excluir este compromisso?')) return;
+  DB.agenda = (DB.agenda||[]).filter(x => x.id !== id);
+  fecharAgEventModal();
+  save(); renderAgenda();
+}
+
+// ── MODAL TAREFA ──
+function openAgTarefaModal(id) {
+  const t = id ? (DB.tarefas_agenda||[]).find(x => x.id===id) : null;
+  document.getElementById('ag-tarefa-id').value     = t ? t.id : '';
+  document.getElementById('ag-tarefa-titulo').value  = t ? t.titulo : '';
+  document.getElementById('ag-tarefa-prazo').value  = t ? t.prazo : agDiaSel;
+  document.getElementById('ag-tarefa-prio').value   = t ? (t.prioridade||'normal') : 'normal';
+  document.getElementById('ag-tarefa-desc').value   = t ? (t.descricao||'') : '';
+  document.getElementById('ag-tarefa-modal-title').textContent = t ? 'Editar Tarefa' : 'Nova Tarefa';
+  document.getElementById('ag-tarefa-del-btn').style.display = t ? '' : 'none';
+  document.getElementById('modal-ag-tarefa').style.display = 'flex';
+  setTimeout(()=>document.getElementById('ag-tarefa-titulo').focus(), 80);
+}
+
+function fecharAgTarefaModal() { document.getElementById('modal-ag-tarefa').style.display = 'none'; }
+
+function saveAgTarefa() {
+  const titulo = document.getElementById('ag-tarefa-titulo').value.trim();
+  const prazo  = document.getElementById('ag-tarefa-prazo').value;
+  if (!titulo || !prazo) { alert('Preencha título e prazo.'); return; }
+  const id = document.getElementById('ag-tarefa-id').value || ('tg_' + Date.now());
+  const existe = (DB.tarefas_agenda||[]).find(x => x.id===id);
+  const tarefa = {
+    id, titulo, prazo,
+    prioridade: document.getElementById('ag-tarefa-prio').value,
+    descricao:  document.getElementById('ag-tarefa-desc').value.trim(),
+    concluido:  existe ? existe.concluido : false,
+  };
+  if (!DB.tarefas_agenda) DB.tarefas_agenda = [];
+  const idx = DB.tarefas_agenda.findIndex(x => x.id===id);
+  if (idx >= 0) DB.tarefas_agenda[idx] = tarefa; else DB.tarefas_agenda.push(tarefa);
+  fecharAgTarefaModal();
+  agDiaSel = prazo;
+  save(); renderAgenda();
+}
+
+function deleteAgTarefa(id) {
+  const idDel = id || document.getElementById('ag-tarefa-id').value;
+  if (!idDel || !confirm('Excluir esta tarefa?')) return;
+  DB.tarefas_agenda = (DB.tarefas_agenda||[]).filter(x => x.id !== idDel);
+  if (!id) fecharAgTarefaModal();
+  save(); renderAgenda();
+}
+
+function toggleAgTarefa(id) {
+  const t = (DB.tarefas_agenda||[]).find(x => x.id===id);
+  if (t) { t.concluido = !t.concluido; save(); renderAgDay(); updateAgBadge(); }
+}
+
+function notificarSlackAgenda(ev) {
+  const webhook = getSlackWebhook();
+  if (!webhook) { alert('Configure o Slack primeiro (ícone ⚡ no topo).'); return; }
+  const [a,m,d] = ev.data.split('-');
+  const hora = ev.horaInicio ? ` às ${ev.horaInicio}${ev.horaFim?' até '+ev.horaFim:''}` : '';
+  fetch(webhook, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ text: `📅 *Compromisso:* ${ev.titulo}\n📆 ${d}/${m}/${a}${hora}${ev.descricao?'\n'+ev.descricao:''}` })
+  }).catch(()=>{});
 }
 
 // ════════════════════════════════════════════════════════════════════
