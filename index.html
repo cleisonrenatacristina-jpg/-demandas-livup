@@ -45,6 +45,14 @@
   }
   #logo { font-size: 17px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; white-space: nowrap; flex-shrink: 0; }
   #logo span { color: var(--accent2); }
+  #sync-status {
+    font-size: 11px; font-family: var(--mono); padding: 3px 10px;
+    border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+    opacity: 0; transition: opacity .3s; pointer-events: none;
+  }
+  #sync-status.saving { opacity:1; color:var(--accent2); background:rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.3); }
+  #sync-status.saved  { opacity:1; color:var(--green);   background:rgba(34,197,94,.1);  border:1px solid rgba(34,197,94,.25); }
+  #sync-status.error  { opacity:1; color:var(--red);     background:rgba(239,68,68,.1);  border:1px solid rgba(239,68,68,.25); }
 
   /* ── NAV TABS ── */
   #nav { display: flex; gap: 4px; flex-shrink: 1; overflow-x: auto; min-width: 0; }
@@ -446,6 +454,7 @@
       <button class="nav-tab"             onclick="setView('setores')"  id="tab-setores">🏢 Setores</button>
     </div>
     <div class="flex1"></div>
+    <div id="sync-status"></div>
     <button class="btn btn-ghost" onclick="exportBackup()" title="Exportar backup completo" style="flex-shrink:0;padding:6px 10px;">💾</button>
     <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()" title="Importar backup" style="flex-shrink:0;padding:6px 10px;">📂</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importBackup(event)"/>
@@ -1160,10 +1169,20 @@ const supa = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABA
 let ultimaVersaoRemota = null; // evita re-renderizar com o eco da própria gravação
 let pushPendente = null;       // debounce: agrupa gravações rápidas em sequência
 
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  clearTimeout(el._t);
+  el.className = state;
+  el.textContent = msg;
+  if (state === 'saved') el._t = setTimeout(() => { el.className = ''; }, 3000);
+}
+
 function pushParaSupabase() {
   if (!supa) return;
   clearTimeout(pushPendente);
   pushPendente = setTimeout(async () => {
+    setSyncStatus('saving', '⟳ Salvando...');
     const versao = new Date().toISOString();
     ultimaVersaoRemota = versao;
     localStorage.setItem('df3_ts', versao);
@@ -1171,7 +1190,12 @@ function pushParaSupabase() {
       .from('df_estado')
       .update({ dados: DB, atualizado_em: versao })
       .eq('id', 1);
-    if (error) console.warn('[Supabase] Falha ao sincronizar:', error.message);
+    if (error) {
+      console.warn('[Supabase] Falha ao sincronizar:', error.message);
+      setSyncStatus('error', '✕ Erro ao salvar');
+    } else {
+      setSyncStatus('saved', '✓ Salvo');
+    }
   }, 400);
 }
 
