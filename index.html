@@ -521,6 +521,7 @@
         </div>
       </div>
     </div>
+    <button class="btn btn-ghost" onclick="abrirBackups()" id="btn-backups" title="Backups automáticos" style="flex-shrink:0;padding:6px 10px;">🛡️</button>
     <button class="btn btn-ghost" onclick="openApiKeyModal()" id="btn-apikey" title="Configurar chave da API">🔑 API</button>
     <button class="btn btn-ghost" onclick="setView('reunioes')" id="btn-reunioes">📝 Reuniões</button>
     <button class="btn btn-amber" onclick="openAtaModal('new')">+ Reunião</button>
@@ -1095,6 +1096,29 @@
   </div>
 </div>
 
+<!-- MODAL BACKUPS -->
+<div class="overlay" id="modal-backups" style="display:none" onclick="if(event.target===this)fecharBackups()">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-hd">
+      <div class="modal-hd-title">🛡️ Backups Automáticos</div>
+      <button class="btn btn-secondary btn-sm" onclick="fecharBackups()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px;">
+      <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--green);">
+        ✓ Backup automático criado antes de cada atualização de setores. Máximo 10 versões salvas.
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--muted);">Clique em Restaurar para voltar a uma versão anterior</span>
+        <button class="btn btn-primary btn-sm" onclick="criarSnapshotManual()">💾 Salvar agora</button>
+      </div>
+      <div id="backups-lista" style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="fecharBackups()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL COMPROMISSO -->
 <div class="overlay" id="modal-ag-event" style="display:none" onclick="if(event.target===this)fecharAgEventModal()">
   <div class="modal" style="max-width:480px;">
@@ -1255,6 +1279,7 @@ const INITIAL = {
   reunioes:[],
   agenda:[],
   tarefas_agenda:[],
+  snapshots:[],
   receitas:RECEITAS_LIVUP,
 };
 
@@ -1403,6 +1428,7 @@ function mesclaReceitasLivup(saved) {
   saved.reunioes = saved.reunioes || [];
   saved.agenda = saved.agenda || [];
   saved.tarefas_agenda = saved.tarefas_agenda || [];
+  saved.snapshots = saved.snapshots || [];
   return saved;
 }
 
@@ -4061,6 +4087,90 @@ function escHtml(str){
     .replace(/</g,"&lt;")
     .replace(/>/g,"&gt;")
     .replace(/"/g,"&quot;");
+}
+
+// ════════════════════════════════════════════════════════════════════
+// BACKUPS / SNAPSHOTS
+// ════════════════════════════════════════════════════════════════════
+const MAX_SNAPSHOTS = 10;
+
+function criarSnapshot(tipo) {
+  if (!DB.snapshots) DB.snapshots = [];
+  const snap = {
+    id: 'snap_' + Date.now(),
+    tipo: tipo || 'manual',
+    criadoEm: new Date().toISOString(),
+    demandas:  (DB.demandas  || []).length,
+    reunioes:  (DB.reunioes  || []).length,
+    setores:   (DB.setores   || []).length,
+    dados: JSON.parse(JSON.stringify({ // deep copy sem snapshots p/ não recursão
+      demandas: DB.demandas || [],
+      reunioes: DB.reunioes || [],
+      setores:  DB.setores  || [],
+      agenda:   DB.agenda   || [],
+      tarefas_agenda: DB.tarefas_agenda || [],
+      paradasDiretas: DB.paradasDiretas || [],
+      receitas: DB.receitas || [],
+    }))
+  };
+  DB.snapshots.unshift(snap);
+  if (DB.snapshots.length > MAX_SNAPSHOTS) DB.snapshots = DB.snapshots.slice(0, MAX_SNAPSHOTS);
+  save();
+  return snap;
+}
+
+function criarSnapshotManual() {
+  const snap = criarSnapshot('manual');
+  const dt = new Date(snap.criadoEm).toLocaleString('pt-BR');
+  alert(`✅ Backup salvo!\n${dt}\n${snap.demandas} demandas · ${snap.reunioes} reuniões · ${snap.setores} setores`);
+  renderBackupsLista();
+}
+
+function restaurarSnapshot(id) {
+  const snap = (DB.snapshots || []).find(s => s.id === id);
+  if (!snap) { alert('Backup não encontrado.'); return; }
+  const dt = new Date(snap.criadoEm).toLocaleString('pt-BR');
+  if (!confirm(`Restaurar backup de ${dt}?\n\n${snap.demandas} demandas · ${snap.reunioes} reuniões · ${snap.setores} setores\n\nOs dados atuais serão substituídos. Um novo backup será criado antes.`)) return;
+  criarSnapshot('pre-restauracao');
+  const snapshots = DB.snapshots;
+  Object.assign(DB, snap.dados);
+  DB.snapshots = snapshots;
+  save();
+  render();
+  fecharBackups();
+  alert(`✅ Dados restaurados para ${dt}`);
+}
+
+function abrirBackups() {
+  renderBackupsLista();
+  document.getElementById('modal-backups').style.display = 'flex';
+}
+function fecharBackups() { document.getElementById('modal-backups').style.display = 'none'; }
+
+function renderBackupsLista() {
+  const lista = document.getElementById('backups-lista');
+  if (!lista) return;
+  const snaps = DB.snapshots || [];
+  if (!snaps.length) {
+    lista.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px;">Nenhum backup ainda.<br>Crie um agora ou aguarde a próxima atualização de setores.</div>`;
+    return;
+  }
+  const tipoLabel = { 'manual':'Manual','pre-setores':'Pré-atualização setores','pre-restauracao':'Pré-restauração','auto':'Automático' };
+  lista.innerHTML = snaps.map((s,i) => {
+    const dt = new Date(s.criadoEm).toLocaleString('pt-BR');
+    const label = tipoLabel[s.tipo] || s.tipo;
+    const cor = s.tipo==='manual'?'var(--sky)':s.tipo==='pre-setores'?'var(--accent2)':'var(--muted)';
+    return `<div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:700;color:var(--text);">${dt}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">
+          <span style="color:${cor};font-weight:700;">${label}</span> ·
+          ${s.demandas} demandas · ${s.reunioes} reuniões · ${s.setores} setores
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="restaurarSnapshot('${s.id}')">↩ Restaurar</button>
+    </div>`;
+  }).join('');
 }
 
 // ════════════════════════════════════════════════════════════════════
