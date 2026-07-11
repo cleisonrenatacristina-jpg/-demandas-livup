@@ -1032,7 +1032,7 @@
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;">
         <div class="sec-label" style="color:var(--sky)">📋 Dados da Reunião</div>
         <div class="grid2" style="gap:10px;">
-          <div class="field span2"><label>Título / Assunto *</label><input id="ma-titulo" placeholder="Ex: Planejamento Mensal — Maio 2026" oninput="saveDraft()"/></div>
+          <div class="field span2"><label>Título / Assunto *</label><input id="ma-titulo" placeholder="Ex: Planejamento Mensal — Maio 2026" oninput="saveDraft();autoPreencherPautaProducao()"/></div>
           <div class="field"><label>Data</label><input type="date" id="ma-data" onchange="saveDraft()"/></div>
           <div class="field"><label>Local / Plataforma</label><input id="ma-local" placeholder="Sala, Teams, Zoom..." oninput="saveDraft()"/></div>
           <div class="field span2"><label>Participantes (separe por vírgula)</label><input id="ma-participantes" placeholder="Cleison, Maria, João..." oninput="saveDraft()"/></div>
@@ -2079,6 +2079,27 @@ function formatDuracao(ini, fim){
 // ════════════════════════════════════════════════════════════════════
 // MODAL ATA
 // ════════════════════════════════════════════════════════════════════
+const PAUTA_HEADERS_PRODUCAO = ["SEGURANÇA","QUALIDADE","AÇOUGUE","FLV","COCÇÃO","SALGADOS E DOCES","PORCIONAMENTO","AÇÕES"];
+
+function autoPreencherPautaProducao(){
+  if(editingAtaId) return; // só preenche automaticamente em ata nova
+  const titulo = document.getElementById("ma-titulo").value||"";
+  const norm = titulo.normalize("NFD").replace(new RegExp("[\\u0300-\\u036f]","g"),"").toLowerCase();
+  if(!norm.includes("reuniao de producao")) return;
+  const pautaEl = document.getElementById("ma-pauta");
+  if(pautaEl.value.trim()!=="") return; // não sobrescreve o que já foi digitado
+  pautaEl.value = PAUTA_HEADERS_PRODUCAO.join("\n\n");
+  saveDraft();
+}
+
+// Deixa em negrito as linhas que são exatamente um dos cabeçalhos padrão da reunião de produção
+function formatPautaHtml(pauta){
+  return escHtml(pauta).split("\n").map(line=>{
+    const norm = line.trim().toUpperCase();
+    return PAUTA_HEADERS_PRODUCAO.includes(norm) ? `<b style="color:var(--sky)">${line}</b>` : line;
+  }).join("\n");
+}
+
 function openAtaModal(idOrNew){
   editingAtaId = idOrNew==="new"?null:idOrNew;
   const r = idOrNew==="new"?null:DB.reunioes.find(x=>x.id===idOrNew);
@@ -2281,7 +2302,7 @@ function openAtaDetail(id){
       ${r.participantes?.length?`<span>👥 ${r.participantes.map(escHtml).join(", ")}</span>`:""}
     </div>
     ${r.pauta?`<div class="sec-label" style="color:var(--sky);margin-top:0">📝 Anotações / Pauta</div>
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;margin-bottom:10px;max-height:340px;overflow-y:auto">${escHtml(r.pauta)}</div>`:""}
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;margin-bottom:10px;max-height:340px;overflow-y:auto">${formatPautaHtml(r.pauta)}</div>`:""}
 
     <!-- AI BOX -->
     <div class="ai-box">
