@@ -2346,9 +2346,14 @@ function renderGanttProjetos(){
   }
   vazio.style.display = "none";
 
-  const header = `<div style="display:grid;grid-template-columns:200px repeat(${totalDias},minmax(18px,1fr));gap:1px;margin-bottom:4px;">
+  const hojeIso = new Date().toISOString().slice(0,10);
+  const header = `<div style="display:grid;grid-template-columns:200px repeat(${totalDias},minmax(18px,1fr));gap:1px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border2);">
     <div></div>
-    ${Array.from({length:totalDias},(_,i)=>`<div style="font-size:9px;text-align:center;color:var(--muted);">${i+1}</div>`).join("")}
+    ${Array.from({length:totalDias},(_,i)=>{
+      const diaIso = `${projGanttMes}-${String(i+1).padStart(2,"0")}`;
+      const ehHoje = diaIso===hojeIso;
+      return `<div style="font-size:12px;font-weight:700;text-align:center;color:${ehHoje?"#fff":"var(--text)"};${ehHoje?"background:var(--accent);border-radius:6px;padding:2px 0;":"padding:2px 0;"}">${i+1}</div>`;
+    }).join("")}
   </div>`;
 
   const linhasHtml = linhas.map(({p,e,ini,fim})=>{
