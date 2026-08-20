@@ -231,6 +231,13 @@
   }
   .setor-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
 
+  /* ── PROJETOS ── */
+  #projetos-wrap { flex: 1; overflow-y: auto; padding: 16px 20px; }
+  #projetos-grid { display: flex; flex-direction: column; gap: 14px; }
+  .projeto-card { background: var(--card); border: 1px solid var(--border2); border-radius: 12px; padding: 16px; }
+  .proj-progress-bar { background: var(--bg); border-radius: 20px; height: 7px; overflow: hidden; flex: 1; min-width: 100px; }
+  .proj-progress-fill { height: 100%; background: var(--accent2); border-radius: 20px; transition: width .2s; }
+
   /* ── TAGS & CHIPS ── */
   .tag {
     display: inline-flex; align-items: center; gap: 3px;
@@ -493,6 +500,7 @@
       <button class="nav-tab"             onclick="setView('paradas')"  id="tab-paradas">⏱️ Paradas</button>
       <button class="nav-tab"             onclick="setView('setores')"  id="tab-setores">🏢 Setores</button>
       <button class="nav-tab"             onclick="setView('agenda')"  id="tab-agenda">📅 Agenda<span id="ag-badge" class="ag-badge" style="display:none"></span></button>
+      <button class="nav-tab"             onclick="setView('projetos')" id="tab-projetos">🏗 Projetos<span id="proj-badge" class="ag-badge" style="display:none;background:var(--red)"></span></button>
     </div>
     <div class="flex1"></div>
     <div id="sync-status"></div>
@@ -831,6 +839,36 @@
       </div>
     </div>
 
+    <!-- PROJETOS -->
+    <div class="view" id="view-projetos">
+      <div id="projetos-wrap">
+        <div id="proj-alertas"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm" id="proj-tab-lista" onclick="setViewProjetos('lista')">📋 Lista</button>
+            <button class="btn btn-sm" id="proj-tab-gantt" onclick="setViewProjetos('gantt')">📊 Gantt</button>
+          </div>
+          <button class="btn btn-primary" onclick="openProjetoModal('new')">+ Novo Projeto</button>
+        </div>
+
+        <div id="proj-sub-lista">
+          <div id="projetos-grid"></div>
+        </div>
+
+        <div id="proj-sub-gantt" style="display:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <button class="btn btn-ghost btn-sm" onclick="mudarMesGantt(-1)">‹</button>
+            <input type="month" id="proj-gantt-mes" onchange="onMudarMesGanttInput()" style="background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:5px 10px;font-family:inherit;"/>
+            <button class="btn btn-ghost btn-sm" onclick="mudarMesGantt(1)">›</button>
+          </div>
+          <div id="proj-gantt-grid-wrap" style="overflow-x:auto;">
+            <div id="proj-gantt-grid"></div>
+          </div>
+          <div id="proj-gantt-vazio" class="empty" style="display:none"><span class="empty-icon">📊</span>Nenhuma etapa com data nesse mês</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1007,6 +1045,62 @@
       <div class="flex1"></div>
       <button class="btn btn-secondary" onclick="closeModal('modal-setor')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveSetor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROJETO -->
+<div class="overlay" id="modal-projeto" style="display:none" onclick="if(event.target===this)closeModal('modal-projeto')">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-hd">
+      <div class="modal-hd-title" id="mp-title">Projeto</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-projeto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nome do Projeto *</label><input id="mp-nome" placeholder="Ex: Reforma da linha de embalagem"/></div>
+      <div class="field"><label>Descrição</label><textarea id="mp-descricao" rows="2" placeholder="Escopo geral do projeto..."></textarea></div>
+      <div class="grid2">
+        <div class="field"><label>Responsável Geral</label><input id="mp-resp" placeholder="Nome do responsável"/></div>
+        <div class="field"><label>Status</label>
+          <select id="mp-status"></select>
+        </div>
+        <div class="field"><label>Orçamento Total (R$)</label><input id="mp-orcamento" type="number" min="0" step="0.01" placeholder="0,00"/></div>
+        <div class="field"><label>Prazo Final</label><input id="mp-prazo" type="date"/></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-danger" id="mp-del-btn" style="display:none" onclick="deleteProjeto()">Excluir</button>
+      <div class="flex1"></div>
+      <button class="btn btn-secondary" onclick="closeModal('modal-projeto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProjeto()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ETAPA DE PROJETO -->
+<div class="overlay" id="modal-etapa" style="display:none" onclick="if(event.target===this)closeModal('modal-etapa')">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-hd">
+      <div class="modal-hd-title" id="me-title">Etapa</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-etapa')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nome da Etapa *</label><input id="me-nome" placeholder="Ex: Cotação de peças, Instalação elétrica..."/></div>
+      <div class="grid2">
+        <div class="field"><label>Responsável</label><input id="me-resp" placeholder="Nome do responsável"/></div>
+        <div class="field"><label>Fornecedor / Terceiro</label><input id="me-fornecedor" placeholder="Nome do fornecedor..."/></div>
+        <div class="field"><label>Data de Início</label><input id="me-inicio" type="date"/></div>
+        <div class="field"><label>Prazo (Data Fim) *</label><input id="me-fim" type="date"/></div>
+        <div class="field"><label>Orçamento da Etapa (R$)</label><input id="me-orcamento" type="number" min="0" step="0.01" placeholder="0,00"/></div>
+        <div class="field"><label>Status</label><select id="me-status"></select></div>
+      </div>
+      <div class="field"><label>O que está faltando / Observações</label><textarea id="me-obs" rows="2" placeholder="Ex: aguardando aprovação do orçamento pelo fornecedor..."></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-danger" id="me-del-btn" style="display:none" onclick="deleteEtapa()">Excluir</button>
+      <div class="flex1"></div>
+      <button class="btn btn-secondary" onclick="closeModal('modal-etapa')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEtapa()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1281,6 +1375,19 @@ const INITIAL = {
   tarefas_agenda:[],
   snapshots:[],
   receitas:RECEITAS_LIVUP,
+  projetos:[],
+};
+
+const STATUS_PROJETO = {
+  ativo:     { label:"Ativo",     color:"#3b82f6", icon:"🚀" },
+  pausado:   { label:"Pausado",   color:"#94a3b8", icon:"⏸" },
+  concluido: { label:"Concluído", color:"#22c55e", icon:"✅" },
+  cancelado: { label:"Cancelado", color:"#ef4444", icon:"✖" },
+};
+const STATUS_ETAPA = {
+  pendente:  { label:"Pendente",     color:"#94a3b8", icon:"⏳" },
+  andamento: { label:"Em Andamento", color:"#f59e0b", icon:"⚡" },
+  concluida: { label:"Concluída",    color:"#22c55e", icon:"✅" },
 };
 
 // ════════════════════════════════════════════════════════════════════
@@ -1296,6 +1403,7 @@ let DB = (() => {
       saved.receitas = [...RECEITAS_LIVUP, ...custom];
       // garante que todas têm classe
       saved.receitas = saved.receitas.map(r=>({...r, classe: r.classe||"Receitas das Caldeiras"}));
+      saved.projetos = saved.projetos || [];
       return saved;
     }
     return INITIAL;
@@ -1311,6 +1419,11 @@ let selectedColor    = CORES[0];
 let currentAnexos    = [];
 let currentEquipamentos = [];
 let currentParadas   = [];
+let editingProjetoId = null;
+let editingEtapaProjetoId = null;
+let editingEtapaId   = null;
+let viewProjetos     = "lista";
+let projGanttMes     = new Date().toISOString().slice(0,7);
 
 function save() { localStorage.setItem("df3", JSON.stringify(DB)); localStorage.setItem("df3_ts", new Date().toISOString()); pushParaSupabase(); }
 function uid()  { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -1396,6 +1509,7 @@ async function carregarDoSupabase() {
       pushParaSupabase();
     }
     assinarMudancasRemotas();
+    verificarAlertasSlackProjetos();
   } catch (e) {
     console.warn('[Supabase] Erro ao inicializar sincronização:', e);
   }
@@ -1429,6 +1543,7 @@ function mesclaReceitasLivup(saved) {
   saved.agenda = saved.agenda || [];
   saved.tarefas_agenda = saved.tarefas_agenda || [];
   saved.snapshots = saved.snapshots || [];
+  saved.projetos = saved.projetos || [];
   return saved;
 }
 
@@ -1507,6 +1622,7 @@ function render() {
   if (currentView==="reunioes") renderReunioes();
   if (currentView==="setores")  renderSetores();
   if (currentView==="agenda")  renderAgenda();
+  if (currentView==="projetos") renderProjetos();
   if (currentView==="paradas") {
     // define hoje como padrão no filtro de data se estiver vazio
     const dfEl = document.getElementById("pd-data-filtro");
@@ -1523,6 +1639,7 @@ function updateStats() {
   document.getElementById("st-crit").textContent  = d.filter(x=>x.prioridade==="critica"&&x.status!=="concluido"&&x.status!=="cancelado").length;
   document.getElementById("st-reun").textContent  = DB.reunioes.length;
   updateAgBadge();
+  updateProjBadge();
 }
 
 function rebuildSetorFilter() {
@@ -1963,6 +2080,342 @@ function onSetorChange(equipamentoSalvo){
   }
   if(equipamentoSalvo) sel.value = equipamentoSalvo;
   calcularParadas();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PROJETOS
+// ════════════════════════════════════════════════════════════════════
+function fmtMoeda(v){
+  return (Number(v)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+}
+
+function setViewProjetos(v){
+  viewProjetos = v;
+  renderProjetos();
+}
+
+// Retorna todas as etapas "urgentes": vencidas ou a vencer em até 3 dias, não concluídas.
+function etapasUrgentes(){
+  const out = [];
+  (DB.projetos||[]).forEach(p=>{
+    if(p.status==="cancelado"||p.status==="concluido") return;
+    (p.etapas||[]).forEach(e=>{
+      if(e.status==="concluida"||!e.dataFim) return;
+      const dias = diasRest(e.dataFim);
+      if(dias!==null && dias<=3) out.push({ projeto:p, etapa:e, dias });
+    });
+  });
+  return out.sort((a,b)=>a.dias-b.dias);
+}
+
+function updateProjBadge(){
+  const badge = document.getElementById("proj-badge");
+  if(!badge) return;
+  const n = etapasUrgentes().length;
+  badge.style.display = n ? "inline-block" : "none";
+  badge.textContent = n;
+}
+
+function renderAlertasProjetos(){
+  const box = document.getElementById("proj-alertas");
+  if(!box) return;
+  const urgentes = etapasUrgentes();
+  if(!urgentes.length){ box.innerHTML=""; return; }
+  box.innerHTML = `<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+    <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px;">🔔 ${urgentes.length} etapa${urgentes.length>1?"s":""} vencendo ou atrasada${urgentes.length>1?"s":""}</div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      ${urgentes.map(u=>`<div style="font-size:11px;color:var(--text);">
+        <strong>${escHtml(u.projeto.nome)}</strong> — ${escHtml(u.etapa.nome)}
+        ${u.etapa.responsavel?` (👤 ${escHtml(u.etapa.responsavel)})`:""}
+        ${prazoHtml(u.etapa.dataFim)}
+      </div>`).join("")}
+    </div>
+    <button class="btn btn-sm" style="margin-top:8px;background:#4a154b;color:#fff;border:none;" onclick="enviarAlertasProjetosSlack()">📣 Enviar no Slack</button>
+  </div>`;
+}
+
+function renderProjetos(){
+  document.getElementById("proj-sub-lista").style.display = viewProjetos==="lista" ? "" : "none";
+  document.getElementById("proj-sub-gantt").style.display = viewProjetos==="gantt" ? "" : "none";
+  document.getElementById("proj-tab-lista").className = "btn btn-sm" + (viewProjetos==="lista" ? " btn-primary" : " btn-ghost");
+  document.getElementById("proj-tab-gantt").className = "btn btn-sm" + (viewProjetos==="gantt" ? " btn-primary" : " btn-ghost");
+  renderAlertasProjetos();
+  updateProjBadge();
+  if(viewProjetos==="gantt") renderGanttProjetos();
+  else renderProjetosLista();
+}
+
+function renderProjetosLista(){
+  const grid = document.getElementById("projetos-grid");
+  if(!grid) return;
+  const projetos = DB.projetos||[];
+  if(!projetos.length){
+    grid.innerHTML = `<div class="empty"><span class="empty-icon">🏗</span>Nenhum projeto cadastrado ainda.</div>`;
+    return;
+  }
+  grid.innerHTML = projetos.map(p=>{
+    const sp = STATUS_PROJETO[p.status]||STATUS_PROJETO.ativo;
+    const etapas = p.etapas||[];
+    const concluidas = etapas.filter(e=>e.status==="concluida").length;
+    const pct = etapas.length ? Math.round(concluidas/etapas.length*100) : 0;
+    const gastoEtapas = etapas.reduce((s,e)=>s+(Number(e.orcamento)||0),0);
+    return `<div class="projeto-card">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${sp.color}22;color:${sp.color};border:1px solid ${sp.color}44;">${sp.icon} ${sp.label}</span>
+        <strong style="font-size:15px;flex:1;min-width:150px;">${escHtml(p.nome)}</strong>
+        <button class="btn btn-ghost btn-sm" onclick="openProjetoModal('${p.id}')">✎ Editar</button>
+        <button class="btn btn-primary btn-sm" onclick="openEtapaModal('${p.id}','new')">+ Etapa</button>
+      </div>
+      ${p.descricao?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${escHtml(p.descricao)}</div>`:""}
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        ${p.responsavel?`<span style="font-size:11px;color:var(--muted);">👤 ${escHtml(p.responsavel)}</span>`:""}
+        ${p.orcamento?`<span style="font-size:11px;color:var(--sky);">💰 Orçamento: ${fmtMoeda(p.orcamento)}${gastoEtapas?` (etapas: ${fmtMoeda(gastoEtapas)})`:""}</span>`:gastoEtapas?`<span style="font-size:11px;color:var(--sky);">💰 Etapas: ${fmtMoeda(gastoEtapas)}</span>`:""}
+        ${p.prazo?prazoHtml(p.prazo):""}
+        <div class="proj-progress-bar"><div class="proj-progress-fill" style="width:${pct}%"></div></div>
+        <span style="font-size:11px;color:var(--muted);">${concluidas}/${etapas.length} etapas</span>
+      </div>
+      ${etapas.length ? etapas.map(e=>etapaRowHtml(p,e)).join("") : `<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px 0;">Nenhuma etapa cadastrada ainda.</div>`}
+    </div>`;
+  }).join("");
+}
+
+function etapaRowHtml(p,e){
+  const se = STATUS_ETAPA[e.status]||STATUS_ETAPA.pendente;
+  const atrasada = e.status!=="concluida" && e.dataFim && diasRest(e.dataFim)<0;
+  return `<div class="d-card" style="margin-bottom:6px;cursor:default;${atrasada?"border-color:rgba(239,68,68,.4);":""}">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+      <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:${se.color}22;color:${se.color};border:1px solid ${se.color}44;">${se.icon} ${se.label}</span>
+      <strong style="font-size:12px;flex:1;">${escHtml(e.nome)}</strong>
+      <button class="btn btn-ghost btn-sm" onclick="openEtapaModal('${p.id}','${e.id}')">✎</button>
+    </div>
+    <div class="d-card-foot">
+      ${e.responsavel?`<span style="font-size:10px;color:var(--muted)">👤 ${escHtml(e.responsavel)}</span>`:""}
+      ${e.fornecedor?`<span style="font-size:10px;color:var(--muted)">🏭 ${escHtml(e.fornecedor)}</span>`:""}
+      ${e.dataInicio?`<span style="font-size:10px;color:var(--muted)">▶ ${fmtDate(e.dataInicio)}</span>`:""}
+      ${e.dataFim?prazoHtml(e.dataFim):""}
+      ${e.orcamento?`<span style="font-size:10px;color:var(--sky)">💰 ${fmtMoeda(e.orcamento)}</span>`:""}
+    </div>
+    ${e.obs?`<div style="font-size:11px;color:var(--accent2);margin-top:6px;">⚠ Falta: ${escHtml(e.obs)}</div>`:""}
+  </div>`;
+}
+
+// ── MODAL PROJETO ──
+function openProjetoModal(idOrNew){
+  editingProjetoId = idOrNew==="new" ? null : idOrNew;
+  const p = idOrNew==="new" ? null : DB.projetos.find(x=>x.id===idOrNew);
+  document.getElementById("mp-title").textContent = p ? "Editar Projeto" : "Novo Projeto";
+  const st = document.getElementById("mp-status");
+  st.innerHTML = Object.keys(STATUS_PROJETO).map(s=>`<option value="${s}">${STATUS_PROJETO[s].icon} ${STATUS_PROJETO[s].label}</option>`).join("");
+  document.getElementById("mp-nome").value = p?.nome||"";
+  document.getElementById("mp-descricao").value = p?.descricao||"";
+  document.getElementById("mp-resp").value = p?.responsavel||"";
+  document.getElementById("mp-status").value = p?.status||"ativo";
+  document.getElementById("mp-orcamento").value = p?.orcamento||"";
+  document.getElementById("mp-prazo").value = p?.prazo||"";
+  document.getElementById("mp-del-btn").style.display = p ? "" : "none";
+  document.getElementById("modal-projeto").style.display = "flex";
+}
+
+function saveProjeto(){
+  const nome = document.getElementById("mp-nome").value.trim();
+  if(!nome) return alert("Nome do projeto é obrigatório.");
+  const obj = {
+    nome,
+    descricao: document.getElementById("mp-descricao").value,
+    responsavel: document.getElementById("mp-resp").value,
+    status: document.getElementById("mp-status").value,
+    orcamento: parseFloat(document.getElementById("mp-orcamento").value)||0,
+    prazo: document.getElementById("mp-prazo").value,
+  };
+  if(editingProjetoId){
+    DB.projetos = DB.projetos.map(p=>p.id===editingProjetoId?{...p,...obj}:p);
+  } else {
+    DB.projetos.push({...obj, id:uid(), criadoEm:new Date().toISOString(), etapas:[]});
+  }
+  save(); closeModal("modal-projeto"); render();
+}
+
+function deleteProjeto(){
+  if(!confirm("Excluir este projeto e todas as suas etapas?")) return;
+  DB.projetos = DB.projetos.filter(p=>p.id!==editingProjetoId);
+  save(); closeModal("modal-projeto"); render();
+}
+
+// ── MODAL ETAPA ──
+function openEtapaModal(projetoId, idOrNew){
+  editingEtapaProjetoId = projetoId;
+  editingEtapaId = idOrNew==="new" ? null : idOrNew;
+  const p = DB.projetos.find(x=>x.id===projetoId);
+  const e = editingEtapaId ? (p.etapas||[]).find(x=>x.id===editingEtapaId) : null;
+  document.getElementById("me-title").textContent = e ? "Editar Etapa" : "Nova Etapa — "+p.nome;
+  const st = document.getElementById("me-status");
+  st.innerHTML = Object.keys(STATUS_ETAPA).map(s=>`<option value="${s}">${STATUS_ETAPA[s].icon} ${STATUS_ETAPA[s].label}</option>`).join("");
+  document.getElementById("me-nome").value = e?.nome||"";
+  document.getElementById("me-resp").value = e?.responsavel||"";
+  document.getElementById("me-fornecedor").value = e?.fornecedor||"";
+  document.getElementById("me-inicio").value = e?.dataInicio||"";
+  document.getElementById("me-fim").value = e?.dataFim||"";
+  document.getElementById("me-orcamento").value = e?.orcamento||"";
+  document.getElementById("me-status").value = e?.status||"pendente";
+  document.getElementById("me-obs").value = e?.obs||"";
+  document.getElementById("me-del-btn").style.display = e ? "" : "none";
+  document.getElementById("modal-etapa").style.display = "flex";
+}
+
+function saveEtapa(){
+  const nome = document.getElementById("me-nome").value.trim();
+  if(!nome) return alert("Nome da etapa é obrigatório.");
+  const obj = {
+    nome,
+    responsavel: document.getElementById("me-resp").value,
+    fornecedor: document.getElementById("me-fornecedor").value,
+    dataInicio: document.getElementById("me-inicio").value,
+    dataFim: document.getElementById("me-fim").value,
+    orcamento: parseFloat(document.getElementById("me-orcamento").value)||0,
+    status: document.getElementById("me-status").value,
+    obs: document.getElementById("me-obs").value,
+  };
+  const p = DB.projetos.find(x=>x.id===editingEtapaProjetoId);
+  if(!p) return;
+  p.etapas = p.etapas||[];
+  if(editingEtapaId){
+    p.etapas = p.etapas.map(e=>e.id===editingEtapaId?{...e,...obj,alertaEnviado:false}:e);
+  } else {
+    p.etapas.push({...obj, id:uid(), alertaEnviado:false});
+  }
+  DB.projetos = DB.projetos.map(x=>x.id===p.id?p:x);
+  save(); closeModal("modal-etapa"); render();
+}
+
+function deleteEtapa(){
+  if(!confirm("Excluir esta etapa?")) return;
+  const p = DB.projetos.find(x=>x.id===editingEtapaProjetoId);
+  if(!p) return;
+  p.etapas = (p.etapas||[]).filter(e=>e.id!==editingEtapaId);
+  DB.projetos = DB.projetos.map(x=>x.id===p.id?p:x);
+  save(); closeModal("modal-etapa"); render();
+}
+
+// ── GANTT ──
+function mudarMesGantt(delta){
+  const [y,m] = projGanttMes.split("-").map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  projGanttMes = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  renderGanttProjetos();
+}
+function onMudarMesGanttInput(){
+  projGanttMes = document.getElementById("proj-gantt-mes").value || projGanttMes;
+  renderGanttProjetos();
+}
+
+function renderGanttProjetos(){
+  const mesEl = document.getElementById("proj-gantt-mes");
+  if(mesEl) mesEl.value = projGanttMes;
+  const [ano,mes] = projGanttMes.split("-").map(Number);
+  const totalDias = new Date(ano, mes, 0).getDate();
+  const mesIni = `${projGanttMes}-01`;
+  const mesFim = `${projGanttMes}-${String(totalDias).padStart(2,"0")}`;
+
+  const linhas = [];
+  (DB.projetos||[]).forEach(p=>{
+    (p.etapas||[]).forEach(e=>{
+      if(!e.dataInicio && !e.dataFim) return;
+      const ini = e.dataInicio || e.dataFim;
+      const fim = e.dataFim || e.dataInicio;
+      if(fim < mesIni || ini > mesFim) return;
+      linhas.push({p, e, ini, fim});
+    });
+  });
+
+  const grid = document.getElementById("proj-gantt-grid");
+  const vazio = document.getElementById("proj-gantt-vazio");
+  if(!linhas.length){
+    grid.innerHTML = "";
+    vazio.style.display = "";
+    return;
+  }
+  vazio.style.display = "none";
+
+  const header = `<div style="display:grid;grid-template-columns:200px repeat(${totalDias},minmax(18px,1fr));gap:1px;margin-bottom:4px;">
+    <div></div>
+    ${Array.from({length:totalDias},(_,i)=>`<div style="font-size:9px;text-align:center;color:var(--muted);">${i+1}</div>`).join("")}
+  </div>`;
+
+  const linhasHtml = linhas.map(({p,e,ini,fim})=>{
+    const diaIni = ini < mesIni ? 1 : Number(ini.slice(8,10));
+    const diaFim = fim > mesFim ? totalDias : Number(fim.slice(8,10));
+    const se = STATUS_ETAPA[e.status]||STATUS_ETAPA.pendente;
+    const cor = e.status==="concluida" ? "#22c55e" : e.status==="andamento" ? "#f59e0b" : (diasRest(e.dataFim)<0 ? "#ef4444" : "#3b82f6");
+    return `<div style="display:grid;grid-template-columns:200px repeat(${totalDias},minmax(18px,1fr));gap:1px;align-items:center;margin-bottom:3px;">
+      <div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px;" title="${escHtml(p.nome)} — ${escHtml(e.nome)}">${escHtml(p.nome)} — ${escHtml(e.nome)}</div>
+      <div style="grid-column:${diaIni+1} / ${diaFim+2};background:${cor};border-radius:6px;height:16px;" title="${se.label}"></div>
+    </div>`;
+  }).join("");
+
+  grid.innerHTML = header + linhasHtml;
+}
+
+// ── ALERTA SLACK (manual) ──
+async function enviarAlertasProjetosSlack(){
+  const webhook = getSlackWebhook();
+  if(!webhook){
+    const abrir = confirm("Webhook do Slack não configurado.\n\nDeseja configurar agora?");
+    if(abrir) abrirConfigSlack();
+    return;
+  }
+  const urgentes = etapasUrgentes();
+  if(!urgentes.length){ alert("Nenhuma etapa vencendo ou atrasada no momento."); return; }
+  const msg = {
+    text: `🏗 *Alerta de Projetos — ${urgentes.length} etapa(s) vencendo/atrasada(s)*`,
+    blocks: [
+      { type:"header", text:{type:"plain_text", text:"🏗 Alerta de Projetos", emoji:true} },
+      { type:"section", text:{type:"mrkdwn", text: urgentes.map(u=>{
+        const lbl = u.dias<0 ? `🔴 atrasada ${Math.abs(u.dias)}d` : u.dias===0 ? "🟡 vence hoje" : `🟡 vence em ${u.dias}d`;
+        return `*${u.projeto.nome}* — ${u.etapa.nome}${u.etapa.responsavel?" ("+u.etapa.responsavel+")":""} — ${lbl}`;
+      }).join("\n") }},
+      { type:"context", elements:[{type:"mrkdwn", text:"_Enviado pelo DemandaFlow LivUp_"}] },
+    ]
+  };
+  try{
+    const resp = await fetch(webhook, {method:"POST", body:JSON.stringify(msg)});
+    if(resp.ok){
+      urgentes.forEach(u=>{ u.etapa.alertaEnviado = true; });
+      save();
+      alert("✅ Alerta enviado no Slack!");
+    } else alert("❌ Erro ao enviar. Verifique a Webhook URL.");
+  }catch(e){
+    alert("❌ Erro: "+e.message);
+  }
+}
+
+// Verifica 1x/dia (por navegador) se há etapas urgentes ainda não notificadas e envia
+// automaticamente pro Slack, se o webhook já estiver configurado.
+async function verificarAlertasSlackProjetos(){
+  const webhook = getSlackWebhook();
+  if(!webhook) return;
+  const hoje = new Date().toISOString().slice(0,10);
+  if(localStorage.getItem("df_proj_alert_date")===hoje) return;
+  const pendentes = etapasUrgentes().filter(u=>!u.etapa.alertaEnviado);
+  if(!pendentes.length){ localStorage.setItem("df_proj_alert_date", hoje); return; }
+  const msg = {
+    text: `🏗 *Alerta automático de Projetos — ${pendentes.length} etapa(s) vencendo/atrasada(s)*`,
+    blocks: [
+      { type:"header", text:{type:"plain_text", text:"🏗 Alerta automático de Projetos", emoji:true} },
+      { type:"section", text:{type:"mrkdwn", text: pendentes.map(u=>{
+        const lbl = u.dias<0 ? `🔴 atrasada ${Math.abs(u.dias)}d` : u.dias===0 ? "🟡 vence hoje" : `🟡 vence em ${u.dias}d`;
+        return `*${u.projeto.nome}* — ${u.etapa.nome}${u.etapa.responsavel?" ("+u.etapa.responsavel+")":""} — ${lbl}`;
+      }).join("\n") }},
+      { type:"context", elements:[{type:"mrkdwn", text:"_Enviado automaticamente pelo DemandaFlow LivUp_"}] },
+    ]
+  };
+  try{
+    const resp = await fetch(webhook, {method:"POST", body:JSON.stringify(msg)});
+    if(resp.ok){
+      pendentes.forEach(u=>{ u.etapa.alertaEnviado = true; });
+      save();
+    }
+  }catch(e){ /* silencioso — banner na tela já cobre o alerta visual */ }
+  localStorage.setItem("df_proj_alert_date", hoje);
 }
 
 // ════════════════════════════════════════════════════════════════════
