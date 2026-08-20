@@ -1424,6 +1424,7 @@ let editingEtapaProjetoId = null;
 let editingEtapaId   = null;
 let viewProjetos     = "lista";
 let projGanttMes     = new Date().toISOString().slice(0,7);
+let projExpandidos   = new Set();
 
 function save() { localStorage.setItem("df3", JSON.stringify(DB)); localStorage.setItem("df3_ts", new Date().toISOString()); pushParaSupabase(); }
 function uid()  { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -2159,24 +2160,32 @@ function renderProjetosLista(){
     const concluidas = etapas.filter(e=>e.status==="concluida").length;
     const pct = etapas.length ? Math.round(concluidas/etapas.length*100) : 0;
     const gastoEtapas = etapas.reduce((s,e)=>s+(Number(e.orcamento)||0),0);
+    const aberto = projExpandidos.has(p.id);
     return `<div class="projeto-card">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="toggleProjetoExpandido('${p.id}')" title="${aberto?"Recolher":"Expandir"} etapas">${aberto?"▼":"▶"}</button>
         <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${sp.color}22;color:${sp.color};border:1px solid ${sp.color}44;">${sp.icon} ${sp.label}</span>
-        <strong style="font-size:15px;flex:1;min-width:150px;">${escHtml(p.nome)}</strong>
+        <strong style="font-size:15px;flex:1;min-width:150px;cursor:pointer;" onclick="toggleProjetoExpandido('${p.id}')">${escHtml(p.nome)}</strong>
         <button class="btn btn-ghost btn-sm" onclick="openProjetoModal('${p.id}')">✎ Editar</button>
         <button class="btn btn-primary btn-sm" onclick="openEtapaModal('${p.id}','new')">+ Etapa</button>
       </div>
       ${p.descricao?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${escHtml(p.descricao)}</div>`:""}
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;${aberto?"margin-bottom:12px;":""}">
         ${p.responsavel?`<span style="font-size:11px;color:var(--muted);">👤 ${escHtml(p.responsavel)}</span>`:""}
         ${p.orcamento?`<span style="font-size:11px;color:var(--sky);">💰 Orçamento: ${fmtMoeda(p.orcamento)}${gastoEtapas?` (etapas: ${fmtMoeda(gastoEtapas)})`:""}</span>`:gastoEtapas?`<span style="font-size:11px;color:var(--sky);">💰 Etapas: ${fmtMoeda(gastoEtapas)}</span>`:""}
         ${p.prazo?prazoHtml(p.prazo):""}
         <div class="proj-progress-bar"><div class="proj-progress-fill" style="width:${pct}%"></div></div>
-        <span style="font-size:11px;color:var(--muted);">${concluidas}/${etapas.length} etapas</span>
+        <span style="font-size:11px;color:var(--muted);cursor:pointer;" onclick="toggleProjetoExpandido('${p.id}')">${concluidas}/${etapas.length} etapas</span>
       </div>
-      ${etapas.length ? etapas.map(e=>etapaRowHtml(p,e)).join("") : `<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px 0;">Nenhuma etapa cadastrada ainda.</div>`}
+      ${aberto ? (etapas.length ? etapas.map(e=>etapaRowHtml(p,e)).join("") : `<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px 0;">Nenhuma etapa cadastrada ainda.</div>`) : ""}
     </div>`;
   }).join("");
+}
+
+function toggleProjetoExpandido(id){
+  if(projExpandidos.has(id)) projExpandidos.delete(id);
+  else projExpandidos.add(id);
+  renderProjetosLista();
 }
 
 function etapaRowHtml(p,e){
@@ -2245,6 +2254,7 @@ function deleteProjeto(){
 function openEtapaModal(projetoId, idOrNew){
   editingEtapaProjetoId = projetoId;
   editingEtapaId = idOrNew==="new" ? null : idOrNew;
+  projExpandidos.add(projetoId);
   const p = DB.projetos.find(x=>x.id===projetoId);
   const e = editingEtapaId ? (p.etapas||[]).find(x=>x.id===editingEtapaId) : null;
   document.getElementById("me-title").textContent = e ? "Editar Etapa" : "Nova Etapa — "+p.nome;
