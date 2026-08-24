@@ -143,9 +143,9 @@
 
   /* ── KANBAN ── */
   #kanban-scroll {
-    flex: 1; overflow-x: auto; overflow-y: hidden;
+    flex: 1; overflow-y: auto;
     padding: 16px 20px;
-    display: flex; gap: 12px; align-items: flex-start;
+    display: flex; flex-direction: column; gap: 14px;
   }
   .k-col {
     flex-shrink: 0; width: 240px;
@@ -455,14 +455,8 @@
     .stat-lbl { font-size: 10px; }
     #search-wrap { min-width: 90px; }
 
-    /* Kanban: cada coluna ocupa quase a tela inteira — desliza uma de cada vez */
     #kanban-scroll {
       padding: 10px 10px;
-      scroll-snap-type: x mandatory;
-    }
-    .k-col {
-      width: 86vw;
-      scroll-snap-align: start;
     }
 
     /* Tabelas em grade ficam compactas demais — preserva colunas e habilita rolagem horizontal */
@@ -1425,6 +1419,7 @@ let editingEtapaId   = null;
 let viewProjetos     = "lista";
 let projGanttMes     = new Date().toISOString().slice(0,7);
 let projExpandidos   = new Set();
+let demandaExpandidos = new Set();
 
 function save() { localStorage.setItem("df3", JSON.stringify(DB)); localStorage.setItem("df3_ts", new Date().toISOString()); pushParaSupabase(); }
 function uid()  { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -1654,50 +1649,53 @@ function rebuildSetorFilter() {
 // ── KANBAN ──────────────────────────────────────────────────────────
 function renderKanban() {
   const wrap = document.getElementById("kanban-scroll");
-  const list = filterDemandas();
-  wrap.innerHTML = "";
-  STATUS_ORDER.forEach(status=>{
-    const cfg   = STATUS[status];
-    const cards = list.filter(d=>d.status===status).sort((a,b)=>PRIO[a.prioridade].ord-PRIO[b.prioridade].ord);
-    const col   = document.createElement("div");
-    col.className="k-col";
-    col.innerHTML=`
-      <div class="k-head" style="background:${cfg.bg};border-color:${cfg.color}44;color:${cfg.color}">
-        <span class="k-head-icon">${cfg.icon}</span>
-        <span class="k-head-label">${cfg.label}</span>
-        <span class="k-count" style="color:${cfg.color}">${cards.length}</span>
-      </div>
-      <div class="k-body" style="background:${cfg.bg};border-color:${cfg.color}33">
-        ${cards.length===0?'<div class="k-empty">Nenhuma</div>':cards.map(d=>demandaCardHtml(d)).join("")}
-      </div>`;
-    wrap.appendChild(col);
+  const list = filterDemandas().sort((a,b)=>{
+    const so = STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status);
+    return so!==0 ? so : PRIO[a.prioridade].ord-PRIO[b.prioridade].ord;
   });
-  // click events
-  wrap.querySelectorAll(".d-card").forEach(el=>{
-    el.addEventListener("click",()=>openDemandaModal(el.dataset.id));
-  });
+  if(!list.length){
+    wrap.innerHTML = `<div class="empty"><span class="empty-icon">📋</span>Nenhuma demanda encontrada</div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(d=>demandaCardHtml(d)).join("");
+}
+
+function toggleDemandaExpandido(id){
+  if(demandaExpandidos.has(id)) demandaExpandidos.delete(id);
+  else demandaExpandidos.add(id);
+  renderKanban();
 }
 
 function demandaCardHtml(d) {
   const pc   = PRIO[d.prioridade];
+  const sc   = STATUS[d.status]||STATUS.aguardando;
   const setor= DB.setores.find(s=>s.id===d.setorId);
   const isV1 = d.fonte==='V1' || (d.origem||'').includes('V1');
-  return `<div class="d-card${isV1?' d-card-v1':''}" data-id="${d.id}">
-    ${isV1?`<div style="display:flex;align-items:center;gap:5px;background:rgba(0,200,83,0.1);border-bottom:1px solid rgba(0,200,83,0.2);padding:4px 8px;margin:-10px -10px 8px -10px;border-radius:8px 8px 0 0;">
-      <span style="font-size:9px;font-weight:800;color:#00C853;letter-spacing:1px;">📋 V1 APONTAMENTOS</span>
-      ${d.os?`<span style="font-size:9px;color:#00C853;margin-left:auto;">OS: ${escHtml(d.os)}</span>`:''}
-    </div>`:''}
-    <div class="d-card-title">${escHtml(d.titulo)}</div>
-    ${d.descricao?`<div class="d-card-desc">${escHtml(d.descricao)}</div>`:""}
-    <div class="d-card-foot">
+  const aberto = demandaExpandidos.has(d.id);
+  const dataAbertura = d.criadoEm ? fmtDate(d.criadoEm.slice(0,10)) : "—";
+  const finalizada = d.status==="concluido"||d.status==="cancelado";
+  return `<div class="projeto-card${isV1?' d-card-v1':''}">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" onclick="toggleDemandaExpandido('${d.id}')" title="${aberto?"Recolher":"Expandir"}">${aberto?"▼":"▶"}</button>
       <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:${pc.color}22;color:${pc.color};border:1px solid ${pc.color}44;">${pc.dot} ${pc.label}</span>
-      ${setor?tagHtml(setor.cor,setor.nome):""}
-      ${d.equipamento?`<span style="font-size:10px;color:var(--muted)">🔧 ${escHtml(d.equipamento)}</span>`:""}
-      ${d.paradas?.filter(p=>p.inicio&&p.fim).length?`<span style="font-size:10px;color:#f97316">⏱ ${d.paradas.filter(p=>p.inicio&&p.fim).length} parada${d.paradas.filter(p=>p.inicio&&p.fim).length>1?"s":""}</span>`:""}
-      ${d.responsavel?`<span style="font-size:10px;color:var(--muted)">👤 ${escHtml(d.responsavel)}</span>`:""}
-      ${d.anexos?.length?`<span style="font-size:10px;color:var(--sky)">📎 ${d.anexos.length}</span>`:""}
-      ${d.dataEntrega?prazoHtml(d.dataEntrega):""}
+      <strong style="font-size:14px;flex:1;min-width:150px;cursor:pointer;${finalizada?"opacity:.65;text-decoration:line-through;":""}" onclick="toggleDemandaExpandido('${d.id}')">${escHtml(d.titulo)}</strong>
+      <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:${sc.color}22;color:${sc.color};border:1px solid ${sc.color}44;">${sc.icon} ${sc.label}</span>
+      <button class="btn btn-ghost btn-sm" onclick="openDemandaModal('${d.id}')">✎ Editar</button>
     </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px;${aberto?"margin-bottom:10px;":""}">
+      🗓 aberta em ${dataAbertura}${isV1?` · 📋 V1 Apontamentos${d.os?` · OS ${escHtml(d.os)}`:""}`:""}
+    </div>
+    ${aberto ? `
+      ${d.descricao?`<div style="font-size:12px;color:var(--text);margin-bottom:8px;">${escHtml(d.descricao)}</div>`:""}
+      <div class="d-card-foot">
+        ${setor?tagHtml(setor.cor,setor.nome):""}
+        ${d.equipamento?`<span style="font-size:10px;color:var(--muted)">🔧 ${escHtml(d.equipamento)}</span>`:""}
+        ${d.paradas?.filter(p=>p.inicio&&p.fim).length?`<span style="font-size:10px;color:#f97316">⏱ ${d.paradas.filter(p=>p.inicio&&p.fim).length} parada${d.paradas.filter(p=>p.inicio&&p.fim).length>1?"s":""}</span>`:""}
+        ${d.responsavel?`<span style="font-size:10px;color:var(--muted)">👤 ${escHtml(d.responsavel)}</span>`:""}
+        ${d.anexos?.length?`<span style="font-size:10px;color:var(--sky)">📎 ${d.anexos.length}</span>`:""}
+        ${d.dataEntrega?prazoHtml(d.dataEntrega):""}
+      </div>
+    ` : ""}
   </div>`;
 }
 
