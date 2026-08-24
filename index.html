@@ -553,6 +553,9 @@
       <option value="v1">📋 V1 Apontamentos</option>
       <option value="manual">✋ Criadas manualmente</option>
     </select>
+    <select class="filter-sel" id="filtro-equipamento" onchange="applyFilters()">
+      <option value="">Todos os equipamentos</option>
+    </select>
   </div>
 
   <!-- MAIN -->
@@ -938,7 +941,7 @@
       <div class="field"><label>Descrição / Observações</label><textarea id="md-descricao" rows="3" placeholder="Detalhes, contexto da reunião..."></textarea></div>
       <div class="grid2">
         <div class="field"><label>Setor</label><select id="md-setor" onchange="onSetorChange()"></select></div>
-        <div class="field"><label>Equipamento</label><select id="md-equipamento"><option value="">Selecione o setor primeiro</option></select></div>
+        <div class="field"><label>Equipamento</label><input type="text" id="md-equipamento" list="equipamentos-livres-list" placeholder="Digite o nome do equipamento..." oninput="calcularParadas()"><datalist id="equipamentos-livres-list"></datalist></div>
         <div class="field"><label>Prioridade</label>
           <select id="md-prioridade">
             <option value="critica">🔴 Crítica</option>
@@ -1109,7 +1112,9 @@
         <div class="field"><label>Responsável</label><input id="me-resp" placeholder="Nome do responsável"/></div>
         <div class="field"><label>Fornecedor / Terceiro</label><input id="me-fornecedor" placeholder="Nome do fornecedor..."/></div>
         <div class="field"><label>Data de Início</label><input id="me-inicio" type="date"/></div>
+        <div class="field"><label>Horário de Início</label><input id="me-hora-inicio" type="time"/></div>
         <div class="field"><label>Prazo (Data Fim) *</label><input id="me-fim" type="date"/></div>
+        <div class="field"><label>Horário de Fim</label><input id="me-hora-fim" type="time"/></div>
         <div class="field"><label>Orçamento da Etapa (R$)</label><input id="me-orcamento" type="number" min="0" step="0.01" placeholder="0,00"/></div>
         <div class="field"><label>Status</label><select id="me-status"></select></div>
       </div>
@@ -1605,9 +1610,11 @@ function filterDemandas() {
   const setor  = document.getElementById("filtro-setor").value;
   const prio   = document.getElementById("filtro-prio").value;
   const fonte  = document.getElementById("filtro-fonte")?.value||"";
+  const equip  = document.getElementById("filtro-equipamento")?.value||"";
   return DB.demandas.filter(d=>{
     if (setor && d.setorId!==setor) return false;
     if (prio  && d.prioridade!==prio) return false;
+    if (equip && d.equipamento!==equip) return false;
     if (fonte==="v1" && d.fonte!=="V1" && !(d.origem||"").includes("V1")) return false;
     if (fonte==="manual" && (d.fonte==="V1" || (d.origem||"").includes("V1"))) return false;
     if (busca && !d.titulo.toLowerCase().includes(busca) && !(d.descricao||"").toLowerCase().includes(busca)) return false;
@@ -1663,6 +1670,7 @@ function applyFilters() { render(); }
 function render() {
   updateStats();
   rebuildSetorFilter();
+  rebuildEquipamentoFilter();
   if (currentView==="kanban")   renderKanban();
   if (currentView==="fila")     renderFila();
   if (currentView==="reunioes") renderReunioes();
@@ -1695,6 +1703,17 @@ function rebuildSetorFilter() {
   const cur = sel.value;
   sel.innerHTML = `<option value="">Todos os setores</option>`;
   DB.setores.forEach(s=>{ sel.innerHTML+=`<option value="${s.id}">${s.nome}</option>`; });
+  sel.value = cur;
+}
+
+// Lista de equipamentos cresce sozinha conforme vão sendo digitados nas demandas —
+// não depende de cadastro prévio no Setor.
+function rebuildEquipamentoFilter() {
+  const sel = document.getElementById("filtro-equipamento");
+  if(!sel) return;
+  const cur = sel.value;
+  const nomes = Array.from(new Set(DB.demandas.map(d=>d.equipamento).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = `<option value="">Todos os equipamentos</option>` + nomes.map(n=>`<option value="${escHtml(n)}">${escHtml(n)}</option>`).join("");
   sel.value = cur;
 }
 
@@ -2305,23 +2324,32 @@ function deleteSetor(){
   save(); closeModal("modal-setor"); render();
 }
 
-// filtra equipamentos ao mudar setor na demanda
+function setorPorIdOuNome(setorId){
+  let setor = DB.setores.find(s=>s.id===setorId);
+  if(!setor && setorId) setor = DB.setores.find(s=>s.nome.toLowerCase()===setorId.toLowerCase());
+  return setor;
+}
+
+// O campo Equipamento da demanda é livre (texto + sugestões) — não precisa estar
+// cadastrado no Setor pra poder ser digitado. A lista de sugestões cresce sozinha
+// com o que já foi usado em outras demandas, além do que estiver cadastrado no setor.
+function preencherDatalistEquipamentos(setor){
+  const dl = document.getElementById("equipamentos-livres-list");
+  if(!dl) return;
+  const registrados = (setor?.equipamentos||[]).map(e=>typeof e==="string"?e:e.nome).filter(Boolean);
+  const usados = DB.demandas.map(d=>d.equipamento).filter(Boolean);
+  const todos = Array.from(new Set([...registrados, ...usados]));
+  dl.innerHTML = todos.map(nome=>`<option value="${escHtml(nome)}">`).join("");
+}
+
+// filtra sugestões de equipamento ao mudar setor na demanda
 function onSetorChange(equipamentoSalvo){
   const setorId = document.getElementById("md-setor").value;
-  // Busca por ID ou por nome (compatibilidade com demandas do V1)
-  let setor = DB.setores.find(s=>s.id===setorId);
-  if(!setor && setorId) setor = DB.setores.find(s=>
-    s.nome.toLowerCase()===setorId.toLowerCase()
-  );
-  const sel = document.getElementById("md-equipamento");
-  const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,kgh:0}:e);
-  if(!equips.length){
-    sel.innerHTML = `<option value="">Nenhum equipamento cadastrado</option>`;
-  } else {
-    sel.innerHTML = `<option value="">Selecione o equipamento...</option>`
-      + equips.map(e=>`<option value="${escHtml(e.nome)}" data-kgh="${e.kgh||0}" ${e.nome===equipamentoSalvo?"selected":""}>${escHtml(e.nome)}${e.kgh?` (${e.kgh} kg/h)`:""}</option>`).join("");
+  const setor = setorPorIdOuNome(setorId);
+  preencherDatalistEquipamentos(setor);
+  if(equipamentoSalvo!==undefined){
+    document.getElementById("md-equipamento").value = equipamentoSalvo||"";
   }
-  if(equipamentoSalvo) sel.value = equipamentoSalvo;
   calcularParadas();
 }
 
@@ -2442,8 +2470,9 @@ function etapaRowHtml(colecao,item,e){
     <div class="d-card-foot">
       ${e.responsavel?`<span style="font-size:10px;color:var(--muted)">👤 ${escHtml(e.responsavel)}</span>`:""}
       ${e.fornecedor?`<span style="font-size:10px;color:var(--muted)">🏭 ${escHtml(e.fornecedor)}</span>`:""}
-      ${e.dataInicio?`<span style="font-size:10px;color:var(--muted)">▶ ${fmtDate(e.dataInicio)}</span>`:""}
+      ${e.dataInicio?`<span style="font-size:10px;color:var(--muted)">▶ ${fmtDate(e.dataInicio)}${e.horaInicio?` ${e.horaInicio}`:""}</span>`:""}
       ${e.dataFim?prazoHtml(e.dataFim):""}
+      ${e.horaFim?`<span style="font-size:10px;color:var(--muted)">🕓 até ${e.horaFim}</span>`:""}
       ${e.orcamento?`<span style="font-size:10px;color:var(--sky)">💰 ${fmtMoeda(e.orcamento)}</span>`:""}
     </div>
     ${e.obs?`<div style="font-size:11px;color:var(--accent2);margin-top:6px;">⚠ Falta: ${escHtml(e.obs)}</div>`:""}
@@ -2510,7 +2539,9 @@ function openEtapaModal(colecao, itemId, idOrNew){
   document.getElementById("me-resp").value = e?.responsavel||"";
   document.getElementById("me-fornecedor").value = e?.fornecedor||"";
   document.getElementById("me-inicio").value = e?.dataInicio||"";
+  document.getElementById("me-hora-inicio").value = e?.horaInicio||"";
   document.getElementById("me-fim").value = e?.dataFim||"";
+  document.getElementById("me-hora-fim").value = e?.horaFim||"";
   document.getElementById("me-orcamento").value = e?.orcamento||"";
   document.getElementById("me-status").value = e?.status||"pendente";
   document.getElementById("me-obs").value = e?.obs||"";
@@ -2526,7 +2557,9 @@ function saveEtapa(){
     responsavel: document.getElementById("me-resp").value,
     fornecedor: document.getElementById("me-fornecedor").value,
     dataInicio: document.getElementById("me-inicio").value,
+    horaInicio: document.getElementById("me-hora-inicio").value,
     dataFim: document.getElementById("me-fim").value,
+    horaFim: document.getElementById("me-hora-fim").value,
     orcamento: parseFloat(document.getElementById("me-orcamento").value)||0,
     status: document.getElementById("me-status").value,
     obs: document.getElementById("me-obs").value,
@@ -2701,9 +2734,12 @@ function updateParada(id, campo, valor){
 }
 
 function getKghEquipamento(){
-  const sel = document.getElementById("md-equipamento");
-  const opt = sel.options[sel.selectedIndex];
-  return parseFloat(opt?.dataset?.kgh||0)||0;
+  const nome = (document.getElementById("md-equipamento").value||"").trim().toLowerCase();
+  if(!nome) return 0;
+  const setor = setorPorIdOuNome(document.getElementById("md-setor").value);
+  const equips = (setor?.equipamentos||[]).map(e=>typeof e==="string"?{nome:e,kgh:0}:e);
+  const match = equips.find(e=>(e.nome||"").trim().toLowerCase()===nome);
+  return match ? (parseFloat(match.kgh)||0) : 0;
 }
 
 function calcularParadas(){
